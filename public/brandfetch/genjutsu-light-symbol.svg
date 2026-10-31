@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Genjutsu AI light symbol">
+  <title>Genjutsu AI — Light Symbol</title>
+  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M130 512C210 404 330 336 512 336C694 336 814 404 894 512C814 620 694 688 512 688C330 688 210 620 130 512Z" stroke-width="54"/>
+    <path d="M152 300C230 200 334 136 470 116" stroke-width="32" opacity="0.95"/>
+    <path d="M872 300C794 200 690 136 554 116" stroke-width="32" opacity="0.95"/>
+    <path d="M152 724C230 824 334 888 470 908" stroke-width="32" opacity="0.95"/>
+    <path d="M872 724C794 824 690 888 554 908" stroke-width="32" opacity="0.95"/>
+    <path d="M622 514c0 61-49 110-110 110c-61 0-110-49-110-110c0-61 49-110 110-110c61 0 110 49 110 110z" stroke-width="44" opacity="0.98"/>
+    <path d="M560 454c-11-22-41-33-69-23c-36 13-53 56-38 96s57 61 97 47c35-13 58-49 52-84c-4-23-18-41-35-54c6 34-18 66-53 71c-24 4-48-9-58-31" stroke-width="34" opacity="0.98"/>
+  </g>
+  <g fill="#FFFFFF">
+    <path d="M512 64l18 52l52 18l-52 18l-18 52l-18-52l-52-18l52-18z"/>
+    <path d="M512 820l18 52l52 18l-52 18l-18 52l-18-52l-52-18l52-18z"/>
+  </g>
+</svg>
