@@ -407,7 +407,7 @@ async function refundUnusedLiveCredits(params: {
 
 type LiveSettlement = ReturnType<typeof calculateLiveFaceSwapSettlement>;
 type LiveSettlementResult = LiveSettlement & {
-  status: 'settled' | 'pending';
+  status: 'settled' | 'pending' | 'not-started';
   refundCreditId?: string | null;
 };
 
@@ -437,7 +437,27 @@ export async function endLiveFaceSwapSession(params: {
   userId: string;
 }): Promise<LiveSettlementResult> {
   let task = await findSession(params.sessionId, params.userId);
-  if (!task) throw new LiveFaceSwapSessionConflictError('Live session not found');
+  // Token authorization can fail before the first ai_task insert (feature
+  // disabled, allowlist, missing provider key). Client cleanup still calls
+  // /stop; this is not a billing/reconciliation failure.
+  if (!task || task.status === 'insufficient') {
+    return {
+      status: 'not-started', billedSeconds: 0,
+      reservedCredits: 0, chargedCredits: 0,
+      refundedCredits: 0, uncoveredCredits: 0,
+      billingBasis: 'server-token-wallclock',
+    };
+  }
+  // JWT was never issued and the initial reservation was already refunded.
+  // Treat duplicate stop reports as successful idempotent cleanup.
+  if (task.status === 'refunded') {
+    return {
+      status: 'settled', billedSeconds: 0,
+      reservedCredits: LIVE_FACE_SWAP_CREDITS, chargedCredits: 0,
+      refundedCredits: LIVE_FACE_SWAP_CREDITS, uncoveredCredits: 0,
+      billingBasis: 'server-token-wallclock',
+    };
+  }
 
   const existingSettlement = readSettlement(task.taskResult);
   if (task.status === 'ended' && existingSettlement) return existingSettlement;
