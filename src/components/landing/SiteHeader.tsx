@@ -31,6 +31,7 @@ const NAV_LINKS = [
 ] as const;
 
 const TRENDING_LINKS = [
+  { label: 'Live Face Swap', href: '/live-face-swap' },
   { label: 'Tiny Desk AI', href: '/tiny-desk-ai' },
   { label: 'Gas Station Dance AI', href: '/gas-station-dance-ai' },
   { label: 'Say It Right AI', href: '/say-it-right-ai' },

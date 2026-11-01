@@ -399,6 +399,13 @@ function AiZombieHugPage() {
               >
                 {m['site.hero.motion']()}
               </Link>
+              . Prefer to swap your own face into this clip? Try{' '}
+              <Link
+                href="/live-face-swap"
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                live face swap
+              </Link>
               .
             </p>
           </div>

@@ -148,6 +148,23 @@ export function PricingCreditsGuide() {
           </table>
         </div>
         <p className="text-muted-foreground mt-4 max-w-2xl text-sm leading-relaxed">
+          Looking for a short-clip face swap? See{' '}
+          <Link
+            href="/live-face-swap"
+            className="underline-offset-4 hover:underline"
+          >
+            Live Face Swap
+          </Link>{' '}
+          (from ≈$0.25 per run) and{' '}
+          <Link
+            href="/video-face-swap"
+            className="underline-offset-4 hover:underline"
+          >
+            Video Face Swap
+          </Link>{' '}
+          for longer footage.
+        </p>
+        <p className="text-muted-foreground mt-4 max-w-2xl text-sm leading-relaxed">
           {m['site.pricing.examples.footnote']()}
         </p>
       </section>

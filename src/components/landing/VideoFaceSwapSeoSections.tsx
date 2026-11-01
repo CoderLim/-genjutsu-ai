@@ -360,6 +360,13 @@ export function VideoFaceSwapSeoSections() {
         <h2 className="text-2xl font-semibold tracking-tight text-white/90">
           {m['site.vfs.related_title']()}
         </h2>
+        <p>
+          Need a short clip swapped fast? Use{' '}
+          <Link href="/live-face-swap" className="underline underline-offset-2">
+            live face swap
+          </Link>
+          .
+        </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
             <Link href="/" className="underline underline-offset-2">

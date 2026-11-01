@@ -7,7 +7,11 @@ import { authClient, signIn, signUp, useSession } from '@/core/auth/client';
 import { Link, useRouter } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { apiPost } from '@/lib/api-client';
-import { resolveAfterAuthUrl, safeInternalPath } from '@/lib/redirect';
+import {
+  resolveAfterAuthUrl,
+  safeInternalPath,
+  socialAuthCallbackUrl,
+} from '@/lib/redirect';
 import { m } from '@/paraglide/messages.js';
 import { localizeHref } from '@/paraglide/runtime.js';
 import { usePublicConfig } from '@/hooks/use-public-config';
@@ -163,7 +167,16 @@ function SignUpPage() {
   });
 
   async function handleSocial(provider: 'google' | 'github') {
-    await signIn.social({ provider, callbackURL: afterLoginUrl });
+    try {
+      // Strip #hash — better-auth rejects relative callbackURLs with fragments
+      // (INVALID_CALLBACK_URL), which looks like a dead Google button.
+      await signIn.social({
+        provider,
+        callbackURL: socialAuthCallbackUrl(afterLoginUrl),
+      });
+    } catch (err: any) {
+      setError(err?.message || 'Sign up failed');
+    }
   }
 
   return (

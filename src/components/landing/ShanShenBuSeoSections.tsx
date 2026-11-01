@@ -108,6 +108,10 @@ const COMPARE_ROWS = [
 
 const EXPLORE_LINKS = [
   {
+    label: () => 'Live Face Swap — swap your own face into this clip',
+    href: '/live-face-swap',
+  },
+  {
     label: () => m['site.shan_shen_bu.seo.more_flying'](),
     href: '/flying-car-ai',
   },

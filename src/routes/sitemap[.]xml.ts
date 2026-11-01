@@ -28,6 +28,7 @@ const STATIC_PATHS = [
   '/ai-zombie-hug',
   '/day-of-the-dead-ai-video',
   '/video-face-swap',
+  '/live-face-swap',
   '/ai-rumpelstiltskin',
   '/bulin-47-ai',
   '/blog',
@@ -46,6 +47,8 @@ const LIMITED_STATIC_PATH_LOCALES: Record<string, readonly string[]> = {
   // Tiny Desk AI ships English editorial first — do not advertise /ja /ko /es mirrors.
   '/tiny-desk-ai': [baseLocale],
   '/shan-shen-bu': [baseLocale],
+  // Live Face Swap ships English editorial first — do not advertise locale mirrors.
+  '/live-face-swap': [baseLocale],
 };
 
 function enabledContentLocales(values: readonly string[]): string[] {
@@ -117,7 +120,12 @@ export const Route = createFileRoute('/sitemap.xml')({
           return pathLocales.map((locale) => ({
             path,
             locale,
-            alternateLocales: pathLocales.length > 1 ? pathLocales : undefined,
+            // Limited/en-only pages still advertise en + x-default in sitemap.
+            alternateLocales: LIMITED_STATIC_PATH_LOCALES[path]
+              ? pathLocales
+              : pathLocales.length > 1
+                ? pathLocales
+                : undefined,
             changeFrequency: path === '/blog' ? 'daily' : 'weekly',
             priority: path === '' ? 1 : 0.8,
           }));
