@@ -1,9 +1,10 @@
 import { and, count, eq, gte, like, isNull } from 'drizzle-orm';
 
 import { db } from '@/core/db';
-import { aiTask } from '@/config/db/schema';
+import { aiTask, credit } from '@/config/db/schema';
 import { consume, getBalance, revoke } from '@/modules/credits/service';
 import { rowsAffectedFromUpdate } from '@/lib/fal-query-error-cas';
+import { getSnowId } from '@/lib/hash';
 
 import {
   LIVE_FACE_SWAP_CREDITS,
@@ -15,6 +16,7 @@ import {
   LIVE_FACE_SWAP_RENEW_LATE_MS,
   LIVE_FACE_SWAP_SCENE,
   LIVE_FACE_SWAP_SECONDS,
+  calculateLiveFaceSwapSettlement,
   liveFaceSwapPaidUntil,
 } from './pricing';
 
@@ -78,7 +80,7 @@ function newChargeTask(params: {
       chunkSeconds: LIVE_FACE_SWAP_SECONDS,
       pricingVersion: LIVE_FACE_SWAP_PRICING_VERSION,
       providerCostUsd: LIVE_FACE_SWAP_PROVIDER_COST_USD,
-      noPartialRefund: true,
+      unusedSecondsRefundOnStop: true,
     }),
     status: 'charging',
     costCredits: 0,
@@ -123,8 +125,8 @@ async function chargeChunk(params: {
         scene: LIVE_FACE_SWAP_SCENE,
         description:
           params.sequence === 0
-            ? 'Start Live Face Swap: 30 seconds'
-            : 'Continue Live Face Swap: 30 seconds',
+            ? 'Reserve Live Face Swap: 30 seconds'
+            : 'Extend Live Face Swap reservation: 30 seconds',
         metadata: JSON.stringify({
           sessionId: params.sessionId,
           sequence: params.sequence,
@@ -357,20 +359,194 @@ export async function renewLiveFaceSwapSession(params: {
   return getLiveFaceSwapPaidState(params);
 }
 
-/** Browser teardown marker, not a provider-side kill switch. */
+/**
+ * A deterministic single refund grant per live session. Crash/retry can read
+ * this credit ID without issuing a second refund. D1 is not transactional:
+ * ambiguous states intentionally remain 'settling' for reconciliation.
+ *
+ * The original reserved chunks stay in credit history as CONSUME entries;
+ * unused credits are returned with a new GRANT, preserving an audit trail.
+ */
+async function refundUnusedLiveCredits(params: {
+  sessionId: string;
+  userId: string;
+  credits: number;
+}) {
+  if (params.credits <= 0) return null;
+  const id = 'live-face-swap-refund:' + params.sessionId;
+  const data = {
+    id,
+    userId: params.userId,
+    userEmail: '',
+    transactionNo: getSnowId(),
+    transactionType: 'grant',
+    transactionScene: LIVE_FACE_SWAP_SCENE,
+    credits: params.credits,
+    remainingCredits: params.credits,
+    status: 'active',
+    description: 'Unused Live Face Swap reserved time refund',
+    orderNo: params.sessionId,
+    expiresAt: null,
+  };
+  try {
+    await db().insert(credit).values(data);
+  } catch {
+    const [existing] = await db().select().from(credit)
+      .where(eq(credit.id, id)).limit(1);
+    if (
+      !existing || existing.userId !== params.userId ||
+      existing.transactionType !== 'grant' || existing.credits !== params.credits
+    ) {
+      throw new LiveFaceSwapSessionConflictError(
+        'Unused live credit refund needs manual reconciliation'
+      );
+    }
+  }
+  return id;
+}
+
+type LiveSettlement = ReturnType<typeof calculateLiveFaceSwapSettlement>;
+type LiveSettlementResult = LiveSettlement & {
+  status: 'settled' | 'pending';
+  refundCreditId?: string | null;
+};
+
+function readSettlement(value: string | null | undefined): LiveSettlementResult | null {
+  if (!value) return null;
+  try {
+    const data = JSON.parse(value);
+    return data && data.status === 'settled' &&
+      Number.isSafeInteger(data.chargedCredits) &&
+      Number.isSafeInteger(data.refundedCredits) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Called AFTER the browser awaits local WebRTC close. Snapshot a server-side
+ * stop timestamp with CAS, then reconcile the unused reservation to one
+ * deterministic credit grant. No client-reported duration is trusted.
+ *
+ * IMPORTANT: This records token-to-stop wall time, not fal's billed duration.
+ * There is still no provider-enforced stop. Unsettled/racy sessions retain
+ * the entire reservation for manual investigation. DO NOT ENABLE PUBLICLY.
+ */
 export async function endLiveFaceSwapSession(params: {
   sessionId: string;
   userId: string;
-}) {
-  await db()
-    .update(aiTask)
-    .set({ status: 'ended' })
-    .where(
-      and(
-        eq(aiTask.id, params.sessionId),
-        eq(aiTask.userId, params.userId),
-        eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
-        eq(aiTask.status, 'active')
-      )
+}): Promise<LiveSettlementResult> {
+  let task = await findSession(params.sessionId, params.userId);
+  if (!task) throw new LiveFaceSwapSessionConflictError('Live session not found');
+
+  const existingSettlement = readSettlement(task.taskResult);
+  if (task.status === 'ended' && existingSettlement) return existingSettlement;
+
+  // Stop was clicked while token minting was still in flight. No delivered
+  // JWT means we must refund the full initial reservation.
+  if (task.status === 'reserved') {
+    await refundLiveFaceSwapBeforeToken(params);
+    task = await findSession(params.sessionId, params.userId);
+    if (task?.status === 'refunded') {
+      return {
+        status: 'settled', billedSeconds: 0,
+        reservedCredits: LIVE_FACE_SWAP_CREDITS, chargedCredits: 0,
+        refundedCredits: LIVE_FACE_SWAP_CREDITS, uncoveredCredits: 0,
+        billingBasis: 'server-token-wallclock',
+      };
+    }
+  }
+
+  if (task.status === 'active') {
+    const issuedAtMs = extractIssuedAt(task.taskInfo);
+    if (!issuedAtMs) {
+      throw new LiveFaceSwapSessionConflictError('Session clock is unavailable');
+    }
+    const endedAtMs = Math.max(Date.now(), issuedAtMs);
+    const claimed = await db().update(aiTask).set({
+      status: 'settling',
+      taskInfo: JSON.stringify({ issuedAtMs, endedAtMs }),
+    }).where(and(
+      eq(aiTask.id, params.sessionId),
+      eq(aiTask.userId, params.userId),
+      eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
+      eq(aiTask.status, 'active')
+    ));
+    if (rowsAffectedFromUpdate(claimed) !== 1) {
+      task = await findSession(params.sessionId, params.userId);
+    } else {
+      task = { ...task, status: 'settling', taskInfo: JSON.stringify({ issuedAtMs, endedAtMs }) };
+    }
+  }
+
+  if (task?.status === 'ended') {
+    const settled = readSettlement(task.taskResult);
+    if (settled) return settled;
+  }
+  if (task?.status !== 'settling') {
+    throw new LiveFaceSwapSessionConflictError(
+      'Session is not ready for settlement'
     );
+  }
+
+  let times: { issuedAtMs: number; endedAtMs: number };
+  try {
+    times = JSON.parse(task.taskInfo || '{}');
+  } catch {
+    throw new LiveFaceSwapSessionConflictError('Invalid session timestamps');
+  }
+  const children = await db().select({
+    id: aiTask.id, status: aiTask.status,
+  }).from(aiTask).where(and(
+    eq(aiTask.userId, params.userId),
+    eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
+    like(aiTask.id, params.sessionId + ':%')
+  ));
+  const paid = new Set<number>();
+  for (const chunk of children) {
+    if (chunk.status === 'charging' || chunk.status === 'reserved') {
+      throw new LiveFaceSwapSessionConflictError(
+        'A concurrent live charge needs manual reconciliation'
+      );
+    }
+    if (chunk.status === 'paid') {
+      paid.add(Number(chunk.id.slice(params.sessionId.length + 1)));
+    }
+  }
+  let sequence = 0;
+  while (paid.has(sequence + 1) && sequence + 1 < LIVE_FACE_SWAP_MAX_CHUNKS) {
+    sequence++;
+  }
+  const reservedChunks = sequence + 1;
+  const settlement = calculateLiveFaceSwapSettlement({
+    issuedAtMs: times.issuedAtMs,
+    endedAtMs: times.endedAtMs,
+    reservedChunks,
+  });
+
+  // Cannot safely settle after the paid-through window, or if there are
+  // gaps from a concurrent/uncertain renewal. Keep reservation on hold.
+  if (settlement.uncoveredCredits > 0 || paid.size !== sequence) {
+    return { ...settlement, status: 'pending' };
+  }
+
+  const refundCreditId = await refundUnusedLiveCredits({
+    sessionId: params.sessionId,
+    userId: params.userId,
+    credits: settlement.refundedCredits,
+  });
+  const result: LiveSettlementResult = {
+    ...settlement, status: 'settled', refundCreditId,
+  };
+  await db().update(aiTask).set({
+    status: 'ended',
+    taskResult: JSON.stringify(result),
+  }).where(and(
+    eq(aiTask.id, params.sessionId),
+    eq(aiTask.userId, params.userId),
+    eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
+    eq(aiTask.status, 'settling')
+  ));
+  // A retry returns the persisted result or safely uses the same refund ID.
+  return result;
 }
