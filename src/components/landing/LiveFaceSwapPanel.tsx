@@ -5,6 +5,7 @@ import {
   useState,
   type ChangeEvent,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Camera,
   CameraOff,
@@ -20,9 +21,17 @@ import {
 } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
+import { useUserCredits } from '@/hooks/use-user-credits';
+import { useCreditGate } from '@/hooks/use-credit-gate';
+import { InsufficientCreditsModal } from '@/components/credits/insufficient-credits-modal';
+import { apiPost, ApiError } from '@/lib/api-client';
+import {
+  LIVE_FACE_SWAP_CREDITS,
+  LIVE_FACE_SWAP_SECONDS,
+  LIVE_FACE_SWAP_MAX_CHUNKS,
+} from '@/modules/live-face-swap/pricing';
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
-const MAX_LIVE_SECONDS = 30;
 const RECORD_SECONDS = 10;
 const LUCY_ENDPOINT = 'decart/lucy-2-5/realtime';
 const LUCY_PROMPT =
@@ -31,6 +40,16 @@ const LUCY_PROMPT =
   'lighting, and background. Keep all non-face areas unchanged. Make the replacement natural and stable.';
 
 type Phase = 'idle' | 'camera-starting' | 'camera-ready' | 'connecting' | 'live';
+
+type PaidState = {
+  issuedAtMs: number;
+  paidUntilMs: number;
+  sequence: number;
+  chargedCredits: number;
+  creditsPerChunk: number;
+  balance: number;
+};
+type TokenResponse = PaidState & { token: string; sessionId: string };
 
 type LiveHandle = {
   close: () => Promise<void>;
@@ -77,12 +96,22 @@ function readPhoto(file: File): Promise<{ data: string; width: number; height: n
 
 export function LiveFaceSwapPanel() {
   const { data: authSession, isPending: authPending } = useSession();
+  const queryClient = useQueryClient();
+  const creditsQuery = useUserCredits(Boolean(authSession?.user));
+  const creditGate = useCreditGate({
+    balance: creditsQuery.data?.balance,
+    email: authSession?.user?.email,
+  });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [referenceData, setReferenceData] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
   const [consent, setConsent] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [clockMs, setClockMs] = useState(() => Date.now());
+  const [billing, setBilling] = useState<PaidState | null>(null);
+  const [renewing, setRenewing] = useState(false);
+  const [autoRenew, setAutoRenew] = useState(true);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordUrl, setRecordUrl] = useState<string | null>(null);
@@ -97,20 +126,21 @@ export function LiveFaceSwapPanel() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const cutoffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const recordingPartsRef = useRef<Blob[]>([]);
   const recordUrlRef = useRef<string | null>(null);
   const photoUrlRef = useRef<string | null>(null);
   const photoSelectionRef = useRef(0);
   const operationRef = useRef(0);
+  const paidRef = useRef<PaidState | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  const renewingRef = useRef(false);
   const cameraAttemptRef = useRef(0);
 
   const releaseTimers = useCallback(() => {
     if (durationTimerRef.current) clearInterval(durationTimerRef.current);
-    if (cutoffTimerRef.current) clearTimeout(cutoffTimerRef.current);
     if (recordTimerRef.current) clearTimeout(recordTimerRef.current);
     durationTimerRef.current = null;
-    cutoffTimerRef.current = null;
     recordTimerRef.current = null;
   }, []);
 
@@ -125,6 +155,19 @@ export function LiveFaceSwapPanel() {
 
   const stopLive = useCallback(async () => {
     operationRef.current += 1;
+    const endedSessionId = sessionIdRef.current;
+    sessionIdRef.current = null;
+    renewingRef.current = false;
+    setRenewing(false);
+    if (endedSessionId) {
+      void fetch('/api/live-face-swap/stop', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ sessionId: endedSessionId }),
+      }).catch(() => undefined);
+    }
     releaseTimers();
     stopRecording();
     const live = liveRef.current;
@@ -136,6 +179,8 @@ export function LiveFaceSwapPanel() {
     }
     setHasRemoteVideo(false);
     setElapsed(0);
+    paidRef.current = null;
+    setBilling(null);
     setPhase(cameraRef.current?.active ? 'camera-ready' : 'idle');
     if (live) {
       try {
@@ -252,9 +297,19 @@ export function LiveFaceSwapPanel() {
       setError('Sign in before starting a live session.');
       return;
     }
+    const balance = creditsQuery.data?.balance;
+    if (typeof balance === 'number' && balance < LIVE_FACE_SWAP_CREDITS) {
+      creditGate.open({ requiredCredits: LIVE_FACE_SWAP_CREDITS, balance });
+      return;
+    }
     setError('');
     setElapsed(0);
+    setClockMs(Date.now());
     setHasRemoteVideo(false);
+    setBilling(null);
+    paidRef.current = null;
+    const sessionId = crypto.randomUUID();
+    sessionIdRef.current = sessionId;
     setPhase('connecting');
     const operation = ++operationRef.current;
 
@@ -279,13 +334,39 @@ export function LiveFaceSwapPanel() {
             method: 'POST',
             credentials: 'same-origin',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ app }),
+            body: JSON.stringify({ app, sessionId }),
           });
-          if (!response.ok) {
-            const payload = await response.json().catch(() => null);
+          const payload = await response.json().catch(() => null);
+          if (!response.ok || payload?.code !== 0) {
+            if (response.status === 402) {
+              const data = payload?.data;
+              if (
+                operation === operationRef.current &&
+                typeof data?.requiredCredits === 'number' &&
+                typeof data?.balance === 'number'
+              ) {
+                creditGate.open(data);
+              }
+            }
             throw new Error(payload?.message || 'Live Face Swap is not available.');
           }
-          return response.text();
+          const paid = payload.data as TokenResponse;
+          if (
+            !paid?.token ||
+            !Number.isFinite(paid.paidUntilMs) ||
+            !Number.isSafeInteger(paid.sequence)
+          ) {
+            throw new Error('Invalid live authorization response');
+          }
+          if (operation !== operationRef.current) {
+            // Tab was closed while authorization was in flight.
+            void apiPost('/api/live-face-swap/stop', { sessionId }).catch(() => undefined);
+            throw new Error('Live session canceled');
+          }
+          paidRef.current = paid;
+          setBilling(paid);
+          void queryClient.invalidateQueries({ queryKey: ['user-credits'] });
+          return paid.token;
         },
         onMedia: (remoteStream) => {
           if (operation !== operationRef.current) return;
@@ -300,13 +381,72 @@ export function LiveFaceSwapPanel() {
           if (operation !== operationRef.current) return;
           if (state === 'live') {
             setPhase('live');
-            const startedAt = Date.now();
             durationTimerRef.current = setInterval(() => {
-              setElapsed(Math.min(MAX_LIVE_SECONDS, Math.floor((Date.now() - startedAt) / 1000)));
+              if (operation !== operationRef.current) return;
+              const now = Date.now();
+              setClockMs(now);
+              const paid = paidRef.current;
+              if (!paid) return;
+              setElapsed(Math.max(0, Math.floor((now - paid.issuedAtMs) / 1000)));
+              if (now >= paid.paidUntilMs) {
+                setError('Your prepaid live time has ended. Start a new session to continue.');
+                void stopLive();
+                return;
+              }
+              if (
+                !autoRenew ||
+                !outputRef.current?.getVideoTracks().length ||
+                now < paid.paidUntilMs - 8_000 ||
+                renewingRef.current
+              ) return;
+
+              if (paid.sequence + 1 >= LIVE_FACE_SWAP_MAX_CHUNKS) {
+                setError('This session has reached its safety limit. You may start another.');
+                void stopLive();
+                return;
+              }
+              renewingRef.current = true;
+              setRenewing(true);
+              const expectedSequence = paid.sequence + 1;
+              void apiPost<PaidState>('/api/live-face-swap/renew', {
+                sessionId,
+                sequence: expectedSequence,
+              })
+                .then((next) => {
+                  if (operation !== operationRef.current) return;
+                  if (
+                    next.sequence < expectedSequence ||
+                    next.paidUntilMs <= paid.paidUntilMs
+                  ) {
+                    throw new Error('Unexpected renewal response');
+                  }
+                  paidRef.current = next;
+                  setBilling(next);
+                  void queryClient.invalidateQueries({ queryKey: ['user-credits'] });
+                })
+                .catch((cause) => {
+                  if (operation !== operationRef.current) return;
+                  // A timeout/503 may have charged the chunk; retry using
+                  // the SAME sequence on the next tick (idempotent).
+                  if (
+                    cause instanceof ApiError &&
+                    cause.data &&
+                    typeof (cause.data as { balance?: unknown }).balance === 'number'
+                  ) {
+                    const data = cause.data as { balance: number; requiredCredits?: number };
+                    if (typeof data.requiredCredits === 'number') {
+                      creditGate.open({ balance: data.balance, requiredCredits: data.requiredCredits });
+                      setError('Not enough credits to continue the live session.');
+                      void stopLive();
+                    }
+                  }
+                })
+                .finally(() => {
+                  if (operation !== operationRef.current) return;
+                  renewingRef.current = false;
+                  setRenewing(false);
+                });
             }, 500);
-            cutoffTimerRef.current = setTimeout(() => {
-              void stopLive();
-            }, MAX_LIVE_SECONDS * 1000);
           }
           if (state === 'failed') {
             setError('The live connection failed. Try again.');
@@ -381,7 +521,7 @@ export function LiveFaceSwapPanel() {
 
   const active = phase === 'live' || phase === 'connecting';
   const canStart = Boolean(referenceData && consent && authSession?.user && cameraRef.current && !active);
-  const secondsLeft = Math.max(0, MAX_LIVE_SECONDS - elapsed);
+  const secondsLeft = billing ? Math.max(0, Math.ceil((billing.paidUntilMs - clockMs) / 1000)) : 0;
   const downloadExtension = recordMime.includes('mp4') ? 'mp4' : 'webm';
 
   return (
@@ -478,7 +618,7 @@ export function LiveFaceSwapPanel() {
                 disabled={!canStart || authPending}
                 onClick={() => void startLive()}
               >
-                <WandSparkles className="size-4" /> Start live face swap
+                <WandSparkles className="size-4" /> Start live face swap · {LIVE_FACE_SWAP_CREDITS} credits
               </button>
             ) : null}
             {active ? (
@@ -500,8 +640,40 @@ export function LiveFaceSwapPanel() {
               <CircleAlert className="mt-0.5 size-4 shrink-0" /> {error}
             </div>
           ) : null}
+          <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3 text-xs leading-5 text-white/65">
+            <div className="flex justify-between gap-2">
+              <span>Credit balance</span>
+              <span className="font-semibold text-[#edb685] tabular-nums">
+                {creditsQuery.data?.balance?.toLocaleString() ?? '—'}
+              </span>
+            </div>
+            <div className="mt-1 flex justify-between gap-2">
+              <span>Live rate</span>
+              <span>{LIVE_FACE_SWAP_CREDITS} credits / {LIVE_FACE_SWAP_SECONDS}s</span>
+            </div>
+            {billing ? (
+              <>
+                <div className="mt-1 flex justify-between gap-2">
+                  <span>Charged this session</span>
+                  <span className="font-medium">{billing.chargedCredits} credits</span>
+                </div>
+                <div className="mt-1 flex justify-between gap-2">
+                  <span>Prepaid time left</span>
+                  <span>{secondsLeft}s {renewing ? '· Renewing...' : ''}</span>
+                </div>
+              </>
+            ) : null}
+          </div>
+          <label className="flex items-center gap-2 text-xs text-white/65">
+            <input type="checkbox" checked={autoRenew} disabled={active}
+              onChange={(event) => setAutoRenew(event.target.checked)}
+              className="size-4 accent-[#d99a68]" />
+            Auto-renew every {LIVE_FACE_SWAP_SECONDS}s while connected
+          </label>
           <p className="text-xs leading-5 text-white/35">
-            Limited pilot access · Up to 30 seconds per test · Browser-side timer only.
+            Prepaid chunks are non-refundable once the live token is issued.
+            Stop anytime to avoid future renewals. Limited pilot access; provider-side
+            duration enforcement is not yet available.
           </p>
         </div>
 
@@ -514,7 +686,7 @@ export function LiveFaceSwapPanel() {
             <span className={'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ' +
               (phase === 'live' ? 'border-green-500/30 bg-green-500/10 text-green-300' : 'border-white/10 bg-white/[0.04] text-white/55')}>
               <span className={'size-1.5 rounded-full ' + (phase === 'live' ? 'animate-pulse bg-green-400' : 'bg-white/35')} />
-              {phase === 'connecting' ? 'Connecting...' : phase === 'live' ? 'Live · ' + secondsLeft + 's left' : phase === 'camera-ready' ? 'Camera ready' : 'Offline'}
+              {phase === 'connecting' ? 'Connecting...' : phase === 'live' ? 'Live · ' + secondsLeft + 's prepaid' : phase === 'camera-ready' ? 'Camera ready' : 'Offline'}
             </span>
           </div>
 
@@ -590,6 +762,13 @@ export function LiveFaceSwapPanel() {
           </div>
         </div>
       </div>
+      <InsufficientCreditsModal
+        gate={creditGate.gate}
+        pack={creditGate.recommendedPack}
+        checkoutLoading={creditGate.checkoutLoading}
+        onClose={creditGate.clear}
+        onBuy={() => void creditGate.buy()}
+      />
     </div>
   );
 }
