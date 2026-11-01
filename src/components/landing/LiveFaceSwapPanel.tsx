@@ -420,6 +420,8 @@ export function LiveFaceSwapPanel() {
           if (operation !== operationRef.current) return;
           if (state === 'live') {
             setPhase('live');
+            // A duplicate SDK 'live' event must not create extra renewal loops.
+            if (durationTimerRef.current) return;
             durationTimerRef.current = setInterval(() => {
               if (operation !== operationRef.current) return;
               const now = Date.now();
@@ -711,16 +713,17 @@ export function LiveFaceSwapPanel() {
             {settlement ? (
               <div className="mt-2 rounded-lg border border-white/10 p-2 text-white/80">
                 <div className="flex justify-between gap-2">
-                  <span>Final charge (server-time estimate)</span>
+                  <span>{settlement.status === 'settled' ? 'Final charge (server-time estimate)' : 'Estimated usage (not finalized)'}</span>
                   <span className="font-semibold">{settlement.chargedCredits} credits · {settlement.billedSeconds}s</span>
                 </div>
-                <div className="flex justify-between gap-2">
-                  <span>Unused reservation returned</span>
-                  <span>{settlement.refundedCredits} credits</span>
-                </div>
-                {settlement.status === 'pending' ? (
-                  <p className="mt-1 text-amber-200/80">Settlement pending manual review; no refund confirmed.</p>
-                ) : null}
+                {settlement.status === 'settled' ? (
+                  <div className="flex justify-between gap-2">
+                    <span>Unused reservation returned</span>
+                    <span>{settlement.refundedCredits} credits</span>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-amber-200/80">Reserved credits remain held pending manual review. No refund confirmed.</p>
+                )}
               </div>
             ) : null}
           </div>
