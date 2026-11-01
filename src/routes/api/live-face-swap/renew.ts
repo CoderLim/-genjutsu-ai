@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { getAuth } from '@/core/auth';
+import { isSameOriginLiveFaceSwapRequest } from '@/modules/live-face-swap/origin';
 import { getBalance } from '@/modules/credits/service';
 import {
   LiveFaceSwapInsufficientCreditsError,
@@ -20,8 +21,7 @@ async function POST({ request }: { request: Request }) {
     keyPrefix: 'live-face-swap-renew',
   });
   if (limit) return limit;
-  const origin = request.headers.get('origin');
-  if (origin && new URL(origin).origin !== new URL(request.url).origin) {
+  if (!isSameOriginLiveFaceSwapRequest(request)) {
     return respErr('Origin not allowed', { status: 403 });
   }
   try {
