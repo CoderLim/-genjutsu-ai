@@ -10,12 +10,10 @@ import {
   Camera,
   CameraOff,
   CircleAlert,
-  Download,
   ImagePlus,
   Loader2,
   Play,
   Square,
-  Video,
   WandSparkles,
   X,
 } from 'lucide-react';
@@ -33,7 +31,6 @@ import {
 } from '@/modules/live-face-swap/pricing';
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
-const RECORD_SECONDS = 10;
 const LUCY_ENDPOINT = 'decart/lucy-2-5/realtime';
 const LUCY_PROMPT =
   'Replace only the visible person’s face with the face of the person in the reference image. ' +
@@ -70,19 +67,6 @@ const buttonPrimary =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#f0b06b,#d77b42)] px-5 py-2.5 text-sm font-semibold text-[#24170f] shadow-[0_8px_20px_rgba(215,123,66,0.12)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40';
 const buttonSecondary =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.05] px-5 py-2.5 text-sm font-medium text-white/85 transition hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-35';
-
-function getRecordMimeType() {
-  if (typeof MediaRecorder === 'undefined') return null;
-  for (const type of [
-    'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm',
-    'video/mp4',
-  ]) {
-    if (MediaRecorder.isTypeSupported(type)) return type;
-  }
-  return null;
-}
 
 function readPhoto(file: File): Promise<{ data: string; width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -125,9 +109,6 @@ export function LiveFaceSwapPanel() {
   const [renewing, setRenewing] = useState(false);
   const [autoRenew, setAutoRenew] = useState(true);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [recordUrl, setRecordUrl] = useState<string | null>(null);
-  const [recordMime, setRecordMime] = useState('video/webm');
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const outputVideoRef = useRef<HTMLVideoElement>(null);
@@ -135,12 +116,8 @@ export function LiveFaceSwapPanel() {
   const cameraRef = useRef<MediaStream | null>(null);
   const outputRef = useRef<MediaStream | null>(null);
   const liveRef = useRef<LiveHandle | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const recordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const recordingPartsRef = useRef<Blob[]>([]);
-  const recordUrlRef = useRef<string | null>(null);
   const photoUrlRef = useRef<string | null>(null);
   const photoSelectionRef = useRef(0);
   const operationRef = useRef(0);
@@ -151,18 +128,7 @@ export function LiveFaceSwapPanel() {
 
   const releaseTimers = useCallback(() => {
     if (durationTimerRef.current) clearInterval(durationTimerRef.current);
-    if (recordTimerRef.current) clearTimeout(recordTimerRef.current);
     durationTimerRef.current = null;
-    recordTimerRef.current = null;
-  }, []);
-
-  const stopRecording = useCallback(() => {
-    if (recordTimerRef.current) clearTimeout(recordTimerRef.current);
-    recordTimerRef.current = null;
-    const recorder = recorderRef.current;
-    if (recorder?.state === 'recording') recorder.stop();
-    recorderRef.current = null;
-    setRecording(false);
   }, []);
 
   const stopLive = useCallback(async () => {
@@ -173,7 +139,6 @@ export function LiveFaceSwapPanel() {
     setRenewing(false);
     if (endedSessionId) setSettling(true);
     releaseTimers();
-    stopRecording();
     const live = liveRef.current;
     liveRef.current = null;
     outputRef.current = null;
@@ -188,7 +153,7 @@ export function LiveFaceSwapPanel() {
     setPhase(cameraRef.current?.active ? 'camera-ready' : 'idle');
     if (live) {
       try {
-        // Close the actual WebRTC handle BEFORE recording the server stop time.
+        // Close the actual WebRTC handle BEFORE requesting server-side settlement.
         await live.close();
       } catch {
         // The session may already be disconnected. Request reconciliation anyway.
@@ -210,7 +175,7 @@ export function LiveFaceSwapPanel() {
         setSettling(false);
       }
     }
-  }, [queryClient, releaseTimers, stopRecording]);
+  }, [queryClient, releaseTimers]);
 
   const stopAll = useCallback(() => {
     cameraAttemptRef.current += 1;
@@ -248,7 +213,6 @@ export function LiveFaceSwapPanel() {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       stopAll();
       if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current);
-      if (recordUrlRef.current) URL.revokeObjectURL(recordUrlRef.current);
     };
   }, [stopAll]);
 
@@ -516,55 +480,9 @@ export function LiveFaceSwapPanel() {
     }
   }
 
-  function startRecording() {
-    const stream = outputRef.current;
-    if (!stream || recording || phase !== 'live') return;
-    const mimeType = getRecordMimeType();
-    if (!mimeType) {
-      setError('Video recording is not supported by this browser.');
-      return;
-    }
-    setError('');
-    if (recordUrlRef.current) URL.revokeObjectURL(recordUrlRef.current);
-    recordUrlRef.current = null;
-    setRecordUrl(null);
-    setRecordMime(mimeType);
-    recordingPartsRef.current = [];
-    try {
-      const recorder = new MediaRecorder(stream, { mimeType });
-      recorder.ondataavailable = (event) => {
-        if (event.data.size) recordingPartsRef.current.push(event.data);
-      };
-      recorder.onerror = () => {
-        setError('Recording failed. Try again.');
-        setRecording(false);
-      };
-      recorder.onstop = () => {
-        const parts = recordingPartsRef.current;
-        if (parts.length) {
-          const blob = new Blob(parts, { type: mimeType });
-          if (blob.size > 0) {
-            const url = URL.createObjectURL(blob);
-            recordUrlRef.current = url;
-            setRecordUrl(url);
-          }
-        }
-        recorderRef.current = null;
-        setRecording(false);
-      };
-      recorder.start(250);
-      recorderRef.current = recorder;
-      setRecording(true);
-      recordTimerRef.current = setTimeout(stopRecording, RECORD_SECONDS * 1000);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Recording is not available.');
-    }
-  }
-
   const active = phase === 'live' || phase === 'connecting';
   const canStart = Boolean(referenceData && consent && authSession?.user && cameraRef.current && !active && !settling);
   const secondsLeft = billing ? Math.max(0, Math.ceil((billing.paidUntilMs - clockMs) / 1000)) : 0;
-  const downloadExtension = recordMime.includes('mp4') ? 'mp4' : 'webm';
 
   return (
     <div className="mx-auto w-full max-w-[1120px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(34,26,23,0.94)] shadow-[0_35px_100px_rgba(0,0,0,0.35)]">
@@ -795,33 +713,6 @@ export function LiveFaceSwapPanel() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.025] p-3 sm:p-4">
-            <button
-              type="button"
-              className={recording ? buttonSecondary : buttonPrimary}
-              disabled={!hasRemoteVideo || phase !== 'live'}
-              onClick={recording ? stopRecording : startRecording}
-            >
-              {recording ? <Square className="size-4" /> : <Video className="size-4" />}
-              {recording ? 'Stop recording' : 'Record 10s'}
-            </button>
-            {recording ? (
-              <span className="flex items-center gap-2 text-xs text-rose-300">
-                <span className="size-2 animate-pulse rounded-full bg-rose-400" /> Recording
-              </span>
-            ) : null}
-            {recordUrl ? (
-              <a
-                href={recordUrl}
-                download={'genjutsu-live-face-swap.' + downloadExtension}
-                className={buttonSecondary}
-              >
-                <Download className="size-4" /> Download
-              </a>
-            ) : (
-              <span className="text-xs text-white/40">Record the AI output to download a short clip.</span>
-            )}
-          </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-white/40">
             <Play className="size-3.5" />
             For best results, keep one person centered with clear lighting. The live swap may alter more than just the face.
