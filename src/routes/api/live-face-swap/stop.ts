@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { getAuth } from '@/core/auth';
 import { isSameOriginLiveFaceSwapRequest } from '@/modules/live-face-swap/origin';
-import { endLiveFaceSwapSession } from '@/modules/live-face-swap/billing';
+import { endLiveFaceSwapSession, LiveFaceSwapSessionConflictError } from '@/modules/live-face-swap/billing';
 import { assertLiveFaceSwapSessionId } from '@/modules/live-face-swap/pricing';
 import { respData, respErr } from '@/lib/resp';
 
@@ -21,10 +21,18 @@ async function POST({ request }: { request: Request }) {
     return respData(settlement, {
       headers: { 'Cache-Control': 'no-store, private' },
     });
-  } catch {
+  } catch (cause) {
+    // Keep the customer response generic while retaining useful operator
+    // diagnostics. Never log uploaded references, auth headers or session IDs.
+    const conflict = cause instanceof LiveFaceSwapSessionConflictError;
+    console.error('[live-face-swap] stop failed', {
+      reason: conflict ? cause.message : 'unexpected-settlement-error',
+    });
     // Fail closed: an uncertain partial refund/charge is NEVER guessed from
-    // a client timer. The task remains for audit and stop can be retried.
-    return respErr('Live settlement is pending reconciliation', { status: 409 });
+    // client timing. Unresolved tasks remain for manual audit.
+    return respErr('Live settlement is pending reconciliation', {
+      status: conflict ? 409 : 502,
+    });
   }
 }
 
