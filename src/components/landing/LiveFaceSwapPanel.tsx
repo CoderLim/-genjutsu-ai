@@ -392,6 +392,18 @@ export function LiveFaceSwapPanel() {
           }
           setHasRemoteVideo(true);
         },
+        onDiagnostic: (event) => {
+          // Fal's experimental realtime SDK emits protocol-level information
+          // that distinguishes token, SDP/ICE and transport failures.
+          // Logs are in the tester's browser only; never send raw inputs,
+          // photos, JWTs or network URLs to our server or customer UI.
+          if (operation !== operationRef.current) return;
+          if (event.kind === 'progress') {
+            console.debug('[live-face-swap] negotiation phase:', event.phase);
+          } else if (event.kind === 'failure') {
+            console.warn('[live-face-swap] protocol failure:', event.message);
+          }
+        },
         onState: (state) => {
           if (operation !== operationRef.current) return;
           if (state === 'live') {
@@ -467,14 +479,22 @@ export function LiveFaceSwapPanel() {
             }, 500);
           }
           if (state === 'failed') {
+            // The SDK reports onState('failed') AND onError for the same
+            // terminal failure. Do not stop here: stopLive increments
+            // operationRef and used to discard the later diagnostic callback.
+            // onError will close the handle and settle the reservation.
             setError((current) => current || 'The live connection failed. Try again.');
-            void stopLive();
           } else if (state === 'closed') {
             void stopLive();
           }
         },
-        onError: () => {
+        onError: (cause) => {
           if (operation === operationRef.current) {
+            // Preserve error details in the local browser console for pilot
+            // debugging, never expose upstream internals in customer copy.
+            // SDK errors can contain sensitive details: testers must redact
+            // tokens, URLs and user-specific data when sharing logs.
+            console.error('[live-face-swap] realtime SDK error:', cause);
             setError((current) => current || 'Unable to connect to the live service. Check your access and try again.');
             void stopLive();
           }
