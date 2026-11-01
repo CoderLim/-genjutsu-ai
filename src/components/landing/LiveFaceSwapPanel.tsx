@@ -27,6 +27,7 @@ import { InsufficientCreditsModal } from '@/components/credits/insufficient-cred
 import { apiPost, ApiError } from '@/lib/api-client';
 import {
   LIVE_FACE_SWAP_CREDITS,
+  LIVE_FACE_SWAP_CREDITS_PER_SECOND,
   LIVE_FACE_SWAP_SECONDS,
   LIVE_FACE_SWAP_MAX_CHUNKS,
 } from '@/modules/live-face-swap/pricing';
@@ -652,7 +653,9 @@ export function LiveFaceSwapPanel() {
             </div>
             <div className="mt-1 flex justify-between gap-2">
               <span>Live rate</span>
-              <span>{LIVE_FACE_SWAP_CREDITS} credits / {LIVE_FACE_SWAP_SECONDS}s</span>
+              <span className="text-right">
+                {LIVE_FACE_SWAP_CREDITS_PER_SECOND} credits/s · {LIVE_FACE_SWAP_CREDITS} per {LIVE_FACE_SWAP_SECONDS}s
+              </span>
             </div>
             {billing ? (
               <>
