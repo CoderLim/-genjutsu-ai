@@ -51,6 +51,15 @@ type PaidState = {
   balance: number;
 };
 type TokenResponse = PaidState & { token: string; sessionId: string };
+type SettlementResponse = {
+  status: 'settled' | 'pending';
+  billedSeconds: number;
+  reservedCredits: number;
+  chargedCredits: number;
+  refundedCredits: number;
+  uncoveredCredits: number;
+  billingBasis: 'server-token-wallclock';
+};
 
 type LiveHandle = {
   close: () => Promise<void>;
@@ -111,6 +120,8 @@ export function LiveFaceSwapPanel() {
   const [elapsed, setElapsed] = useState(0);
   const [clockMs, setClockMs] = useState(() => Date.now());
   const [billing, setBilling] = useState<PaidState | null>(null);
+  const [settlement, setSettlement] = useState<SettlementResponse | null>(null);
+  const [settling, setSettling] = useState(false);
   const [renewing, setRenewing] = useState(false);
   const [autoRenew, setAutoRenew] = useState(true);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
@@ -160,11 +171,7 @@ export function LiveFaceSwapPanel() {
     sessionIdRef.current = null;
     renewingRef.current = false;
     setRenewing(false);
-    if (endedSessionId) {
-      void apiPost('/api/live-face-swap/stop', {
-        sessionId: endedSessionId,
-      }).catch(() => undefined);
-    }
+    if (endedSessionId) setSettling(true);
     releaseTimers();
     stopRecording();
     const live = liveRef.current;
@@ -181,12 +188,29 @@ export function LiveFaceSwapPanel() {
     setPhase(cameraRef.current?.active ? 'camera-ready' : 'idle');
     if (live) {
       try {
+        // Close the actual WebRTC handle BEFORE recording the server stop time.
         await live.close();
       } catch {
-        // The session may already be disconnected. Local media is still released.
+        // The session may already be disconnected. Request reconciliation anyway.
       }
     }
-  }, [releaseTimers, stopRecording]);
+    if (endedSessionId) {
+      try {
+        const result = await apiPost<SettlementResponse>('/api/live-face-swap/stop', {
+          sessionId: endedSessionId,
+        });
+        setSettlement(result);
+        if (result.status === 'pending') {
+          setError('Your session needs a billing review. Reserved credits are held.');
+        }
+        void queryClient.invalidateQueries({ queryKey: ['user-credits'] });
+      } catch {
+        setError('Live billing is awaiting reconciliation. Please contact support if your credits do not return.');
+      } finally {
+        setSettling(false);
+      }
+    }
+  }, [queryClient, releaseTimers, stopRecording]);
 
   const stopAll = useCallback(() => {
     cameraAttemptRef.current += 1;
@@ -202,7 +226,18 @@ export function LiveFaceSwapPanel() {
   }, [stopLive]);
 
   useEffect(() => {
-    const onPageHide = () => stopAll();
+    const onPageHide = () => {
+      // Navigation can cancel normal promises. Send one idempotent best-effort
+      // settlement beacon before tearing down; the normal close may retry.
+      const sessionId = sessionIdRef.current;
+      if (sessionId && navigator.sendBeacon) {
+        navigator.sendBeacon(
+          '/api/live-face-swap/stop',
+          new Blob([JSON.stringify({ sessionId })], { type: 'application/json' })
+        );
+      }
+      stopAll();
+    };
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden') stopAll();
     };
@@ -287,7 +322,7 @@ export function LiveFaceSwapPanel() {
 
   async function startLive() {
     const camera = cameraRef.current;
-    if (!camera || !camera.active || !referenceData || !consent || phase !== 'camera-ready') {
+    if (!camera || !camera.active || !referenceData || !consent || settling || phase !== 'camera-ready') {
       return;
     }
     if (!authSession?.user) {
@@ -304,6 +339,7 @@ export function LiveFaceSwapPanel() {
     setClockMs(Date.now());
     setHasRemoteVideo(false);
     setBilling(null);
+    setSettlement(null);
     paidRef.current = null;
     const sessionId = crypto.randomUUID();
     sessionIdRef.current = sessionId;
@@ -524,7 +560,7 @@ export function LiveFaceSwapPanel() {
   }
 
   const active = phase === 'live' || phase === 'connecting';
-  const canStart = Boolean(referenceData && consent && authSession?.user && cameraRef.current && !active);
+  const canStart = Boolean(referenceData && consent && authSession?.user && cameraRef.current && !active && !settling);
   const secondsLeft = billing ? Math.max(0, Math.ceil((billing.paidUntilMs - clockMs) / 1000)) : 0;
   const downloadExtension = recordMime.includes('mp4') ? 'mp4' : 'webm';
 
@@ -660,7 +696,7 @@ export function LiveFaceSwapPanel() {
             {billing ? (
               <>
                 <div className="mt-1 flex justify-between gap-2">
-                  <span>Charged this session</span>
+                  <span>Credits reserved this session</span>
                   <span className="font-medium">{billing.chargedCredits} credits</span>
                 </div>
                 <div className="mt-1 flex justify-between gap-2">
@@ -668,6 +704,24 @@ export function LiveFaceSwapPanel() {
                   <span>{secondsLeft}s {renewing ? '· Renewing...' : ''}</span>
                 </div>
               </>
+            ) : null}
+            {settling ? (
+              <div className="mt-2 text-amber-200/80">Calculating final charge and unused-credit refund...</div>
+            ) : null}
+            {settlement ? (
+              <div className="mt-2 rounded-lg border border-white/10 p-2 text-white/80">
+                <div className="flex justify-between gap-2">
+                  <span>Final charge (server-time estimate)</span>
+                  <span className="font-semibold">{settlement.chargedCredits} credits · {settlement.billedSeconds}s</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span>Unused reservation returned</span>
+                  <span>{settlement.refundedCredits} credits</span>
+                </div>
+                {settlement.status === 'pending' ? (
+                  <p className="mt-1 text-amber-200/80">Settlement pending manual review; no refund confirmed.</p>
+                ) : null}
+              </div>
             ) : null}
           </div>
           <label className="flex items-center gap-2 text-xs text-white/65">
@@ -677,9 +731,12 @@ export function LiveFaceSwapPanel() {
             Auto-renew every {LIVE_FACE_SWAP_SECONDS}s while connected
           </label>
           <p className="text-xs leading-5 text-white/35">
-            Prepaid chunks are non-refundable once the live token is issued.
-            Stop anytime to avoid future renewals. Limited pilot access; provider-side
-            duration enforcement is not yet available.
+            We reserve {LIVE_FACE_SWAP_CREDITS} credits per {LIVE_FACE_SWAP_SECONDS}s, then estimate
+            actual used seconds from server token issuance to session stop (rounded up).
+            Unused reserved credits are returned on successful settlement. This is
+            not verified provider billing; failed or interrupted sessions may need
+            manual reconciliation. Limited pilot; provider-side duration enforcement
+            is not yet available.
           </p>
         </div>
 
