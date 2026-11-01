@@ -47,6 +47,7 @@
 - [ ] Feature flag default-off and allowlist-only gate, including rejection of unlisted admins.
 - [ ] Five new-session quota per tester per rolling 24 hours; repeat session/chunk attempts do not cause duplicate debit.
 - [ ] Test camera permissions, portrait validation, network/ICE failures, remote failure, insufficient credits, auto-renew, stop, navigation, tab hide, duplicated renewal, and continuous preview beyond 30 seconds on real browsers.
+- [ ] On connection failure, inspect the browser's `[live-face-swap] negotiation phase`, `protocol failure`, and `realtime SDK error` console entries. The SDK delivers a terminal error through both `onState('failed')` and `onError`; do not clear the active operation before `onError` reports the cause. Share only redacted diagnostics. Verify `onMedia`/first playable output occurred before evaluating whether startup should count as chargeable usage.
 - [ ] Verify 3.6 credits/s equivalent and **108-credit hold** per 30s; test 10s → 36 used/72 returned, 30s → 108/0, 38s → 137 used/79 returned. Test repeated stop, overlapping stop/renew, renewal charge uncertainty, and pagehide no-stop/manual reconciliation. No changes to other generators' tariffs.
 - [ ] Compare fal invoice duration to server token-to-stop estimate and credit ledger; **do not assume they match** without signed upstream session usage data.
 - [ ] Confirm upstream disconnection and session stop behavior with live test credentials, with a strict account budget; do not assume browser cleanup enforces upstream billing.
