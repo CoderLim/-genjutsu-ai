@@ -18,20 +18,11 @@ import {
   LIVE_FACE_SWAP_MODEL,
   LIVE_FACE_SWAP_TOKEN_SECONDS,
 } from '@/modules/live-face-swap/pricing';
+import { isSameOriginLiveFaceSwapRequest } from '@/modules/live-face-swap/origin';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { respData, respErr, respJson } from '@/lib/resp';
 
 const TOKEN_URL = 'https://rest.fal.ai/tokens/';
-
-function sameOrigin(request: Request) {
-  const origin = request.headers.get('origin');
-  if (!origin) return false;
-  try {
-    return new URL(origin).origin === new URL(request.url).origin;
-  } catch {
-    return false;
-  }
-}
 
 function readFalToken(raw: string) {
   let token: unknown = raw.trim();
@@ -63,7 +54,7 @@ async function POST({ request }: { request: Request }) {
     keyPrefix: 'live-face-swap-token',
   });
   if (limited) return limited;
-  if (!sameOrigin(request)) return respErr('Origin not allowed', { status: 403 });
+  if (!isSameOriginLiveFaceSwapRequest(request)) return respErr('Origin not allowed', { status: 403 });
 
   let reservedNewSession = false;
   let sessionId: string | null = null;
