@@ -45,7 +45,7 @@ function LiveFaceSwapPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-white/58 sm:text-lg">
               Add a reference face, turn on your camera, and watch an AI-generated
-              swap as you move. Record a short clip when you like the result.
+              swap as you move. Stop the live session whenever you are done.
             </p>
             <div id="generator" className="mt-8 scroll-mt-24 text-left sm:mt-10">
               <LiveFaceSwapPanel />
