@@ -3,7 +3,7 @@
 ## Scope and integration
 
 - New route: `/live-face-swap`. Uses existing Genjutsu theme, SiteHeader, SiteFooter; no SEO prose, nav or sitemap. `noindex,nofollow` remains in place.
-- Browser: portrait upload, camera permission, side-by-side WebRTC preview, optional 10s recording/download, and auto-renewable 30s credit reservations with server-time estimated settlement and unused-credit refund.
+- Browser: portrait upload, camera permission, side-by-side WebRTC preview (no video recording or download in this pilot), and auto-renewable 30s credit reservations with server-time estimated settlement and unused-credit refund.
 - fal model: `decart/lucy-2-5/realtime`. This is generative character editing; hair, face identity or scene preservation is not guaranteed.
 - API routes: `/api/live-face-swap/token`, `/renew`, `/stop`. Each requires an authenticated, same-origin POST (requests with missing or invalid `Origin` are rejected with 403).
 - The token endpoint resolves the **existing site Fal key** using `(await getConfig('fal_api_key'))?.trim()`. Set it through **Admin → Settings → AI → Fal**; the global config layer also supports the existing `FAL_KEY` environment fallback. Never pass the master key to the browser.
@@ -34,7 +34,7 @@
 2. Configure the existing Fal key via **Admin → Settings → AI → Fal** (or existing environment fallback).
 3. Set `LIVE_FACE_SWAP_ENABLED=true` **only in an isolated, budgeted development/staging environment**; set `LIVE_FACE_SWAP_ALLOWED_EMAILS=your-tester@example.com`. **Never enable this flag in production.**
 4. Sign in *as an explicitly listed tester*. An admin not in the allowlist should receive 403.
-5. Visit `/live-face-swap` on localhost or HTTPS, upload an authorized portrait, consent, start, record and stop.
+5. Visit `/live-face-swap` on localhost or HTTPS, upload an authorized portrait, consent, start the live preview, and stop.
 
 ### Acceptance checklist
 
@@ -45,7 +45,7 @@
 - [ ] Missing, malformed or foreign `Origin` receives 403 on token, renew and stop.
 - [ ] Feature flag default-off and allowlist-only gate, including rejection of unlisted admins.
 - [ ] Five new-session quota per tester per rolling 24 hours; repeat session/chunk attempts do not cause duplicate debit.
-- [ ] Test camera permissions, portrait validation, network/ICE failures, remote failure, insufficient credits, auto-renew, stop, navigation, tab hide, duplicated renewal, and clip download on real browsers.
+- [ ] Test camera permissions, portrait validation, network/ICE failures, remote failure, insufficient credits, auto-renew, stop, navigation, tab hide, duplicated renewal, and continuous preview beyond 30 seconds on real browsers.
 - [ ] Verify 3.6 credits/s equivalent and **108-credit hold** per 30s; test 10s → 36 used/72 returned, 30s → 108/0, 38s → 137 used/79 returned. Test repeated stop, overlapping stop/renew, renewal charge uncertainty, and pagehide no-stop/manual reconciliation. No changes to other generators' tariffs.
 - [ ] Compare fal invoice duration to server token-to-stop estimate and credit ledger; **do not assume they match** without signed upstream session usage data.
 - [ ] Confirm upstream disconnection and session stop behavior with live test credentials, with a strict account budget; do not assume browser cleanup enforces upstream billing.
