@@ -49,12 +49,14 @@ function readFalToken(raw: string) {
  * and verified usage reconciliation are available.
  */
 async function POST({ request }: { request: Request }) {
+  if (!isSameOriginLiveFaceSwapRequest(request)) {
+    return respErr('Origin not allowed', { status: 403 });
+  }
   const limited = enforceMinIntervalRateLimit(request, {
     intervalMs: 800,
     keyPrefix: 'live-face-swap-token',
   });
   if (limited) return limited;
-  if (!isSameOriginLiveFaceSwapRequest(request)) return respErr('Origin not allowed', { status: 403 });
 
   let reservedNewSession = false;
   let sessionId: string | null = null;
