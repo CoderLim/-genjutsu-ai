@@ -104,6 +104,15 @@ export function resolveAfterAuthUrl(params: {
 }
 
 /**
+ * better-auth's relative `callbackURL` allowlist rejects `#fragment`.
+ * Social/OAuth must use a hash-free path; email hard-nav can keep the hash.
+ */
+export function socialAuthCallbackUrl(afterLoginUrl: string): string {
+  const path = afterLoginUrl.split('#')[0] || '/';
+  return safeInternalPath(path) || '/';
+}
+
+/**
  * Current path + query, for "bring me back here afterwards". De-localized
  * (`/ja/chat` → `/chat`) because internal hrefs in this app are locale-free —
  * the router rewrite adds the prefix back on the way out.

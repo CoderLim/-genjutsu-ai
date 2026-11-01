@@ -54,6 +54,10 @@ const COMPARE_ROWS = [
 
 const RELATED_TEMPLATES = [
   {
+    label: () => 'Live Face Swap',
+    href: '/live-face-swap',
+  },
+  {
     label: () => 'Tiny Desk AI',
     href: '/tiny-desk-ai',
   },
@@ -271,7 +275,15 @@ export function ColdplayKissCamSeoSections() {
             >
               {m['site.kisscam.seo.link_templates']()}
             </Link>
-            {m['site.kisscam.seo.more_intro_after']()}
+            {m['site.kisscam.seo.more_intro_after']()} Prefer to swap your own
+            face into this clip? Try{' '}
+            <Link
+              href="/live-face-swap"
+              className="font-medium text-[rgb(220,155,99)] underline-offset-4 hover:underline"
+            >
+              live face swap
+            </Link>
+            .
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             {RELATED_TEMPLATES.map((item) => (

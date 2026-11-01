@@ -62,7 +62,15 @@ function GenjutsuPromptsPage() {
             >
               {m['site.prompts.related_tinydesk']()}
             </Link>
-            {m['site.prompts.related_after']()}
+            {m['site.prompts.related_after']()} Prefer a short clip face swap?
+            Try{' '}
+            <Link
+              href="/live-face-swap"
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              live face swap
+            </Link>
+            .
           </p>
 
           <div className="mt-14 flex justify-center">

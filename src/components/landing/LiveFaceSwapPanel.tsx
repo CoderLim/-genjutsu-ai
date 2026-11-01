@@ -9,26 +9,26 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   Camera,
   CameraOff,
+  Check,
   CircleAlert,
-  ImagePlus,
   Loader2,
-  Play,
   Square,
+  Upload,
   WandSparkles,
-  X,
 } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
-import { useUserCredits } from '@/hooks/use-user-credits';
-import { useCreditGate } from '@/hooks/use-credit-gate';
-import { InsufficientCreditsModal } from '@/components/credits/insufficient-credits-modal';
-import { apiPost, ApiError } from '@/lib/api-client';
 import {
   LIVE_FACE_SWAP_CREDITS,
   LIVE_FACE_SWAP_CREDITS_PER_SECOND,
-  LIVE_FACE_SWAP_SECONDS,
   LIVE_FACE_SWAP_MAX_CHUNKS,
+  LIVE_FACE_SWAP_SECONDS,
 } from '@/modules/live-face-swap/pricing';
+import { ApiError, apiPost } from '@/lib/api-client';
+import { cn } from '@/lib/cn';
+import { useCreditGate } from '@/hooks/use-credit-gate';
+import { useUserCredits } from '@/hooks/use-user-credits';
+import { InsufficientCreditsModal } from '@/components/credits/insufficient-credits-modal';
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const LUCY_ENDPOINT = 'decart/lucy-2-5/realtime';
@@ -37,7 +37,41 @@ const LUCY_PROMPT =
   'Maintain the original hair, hairstyle, body, clothes, head movement, expressions, camera framing, ' +
   'lighting, and background. Keep all non-face areas unchanged. Make the replacement natural and stable.';
 
-type Phase = 'idle' | 'camera-starting' | 'camera-ready' | 'connecting' | 'live';
+const REFERENCE_GALLERY = [
+  {
+    id: 'face-animal-cat-01',
+    label: 'Cat',
+    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/face-animal-cat-01.webp',
+  },
+  {
+    id: 'custom-character-033',
+    label: 'Character 33',
+    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/custom-character-033.webp',
+  },
+  {
+    id: 'custom-character-020',
+    label: 'Character 20',
+    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/custom-character-020.webp',
+  },
+  {
+    id: 'custom-character-018',
+    label: 'Character 18',
+    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/custom-character-018.webp',
+  },
+  {
+    id: 'custom-character-075',
+    label: 'Character 75',
+    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/custom-character-075.webp',
+  },
+] as const;
+
+type Phase =
+  | 'idle'
+  | 'camera-starting'
+  | 'camera-ready'
+  | 'connecting'
+  | 'live';
+type ReferenceSource = 'upload' | 'gallery' | null;
 
 type PaidState = {
   issuedAtMs: number;
@@ -67,11 +101,16 @@ const buttonPrimary =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#f0b06b,#d77b42)] px-5 py-2.5 text-sm font-semibold text-[#24170f] shadow-[0_8px_20px_rgba(215,123,66,0.12)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40';
 const buttonSecondary =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.05] px-5 py-2.5 text-sm font-medium text-white/85 transition hover:bg-white/[0.09] disabled:cursor-not-allowed disabled:opacity-35';
+const buttonStart =
+  'inline-flex min-h-14 items-center justify-center gap-2.5 rounded-2xl bg-[linear-gradient(135deg,#8fd48a,#4faf5a)] px-8 py-3.5 text-base font-semibold text-[#102214] shadow-[0_14px_36px_rgba(79,175,90,0.28)] transition hover:opacity-92 disabled:cursor-not-allowed disabled:opacity-40';
 
-function readPhoto(file: File): Promise<{ data: string; width: number; height: number }> {
+function readPhoto(
+  file: File
+): Promise<{ data: string; width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Could not read the reference photo.'));
+    reader.onerror = () =>
+      reject(new Error('Could not read the reference photo.'));
     reader.onload = () => {
       const data = reader.result;
       if (typeof data !== 'string') {
@@ -80,8 +119,13 @@ function readPhoto(file: File): Promise<{ data: string; width: number; height: n
       }
       const image = new Image();
       image.onload = () =>
-        resolve({ data, width: image.naturalWidth, height: image.naturalHeight });
-      image.onerror = () => reject(new Error('Could not decode the reference photo.'));
+        resolve({
+          data,
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        });
+      image.onerror = () =>
+        reject(new Error('Could not decode the reference photo.'));
       image.src = data;
     };
     reader.readAsDataURL(file);
@@ -98,6 +142,8 @@ export function LiveFaceSwapPanel() {
   });
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [referenceData, setReferenceData] = useState<string | null>(null);
+  const [referenceSource, setReferenceSource] = useState<ReferenceSource>(null);
+  const [galleryId, setGalleryId] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
   const [consent, setConsent] = useState(false);
@@ -161,22 +207,29 @@ export function LiveFaceSwapPanel() {
     }
     if (endedSessionId) {
       try {
-        const result = await apiPost<SettlementResponse>('/api/live-face-swap/stop', {
-          sessionId: endedSessionId,
-        });
+        const result = await apiPost<SettlementResponse>(
+          '/api/live-face-swap/stop',
+          {
+            sessionId: endedSessionId,
+          }
+        );
         if (result.status !== 'not-started') {
           setSettlement(result);
         }
         if (result.status === 'pending') {
-          setError('Your session needs a billing review. Reserved credits are held.');
+          setError(
+            'Your session needs a billing review. Reserved credits are held.'
+          );
         }
         void queryClient.invalidateQueries({ queryKey: ['user-credits'] });
       } catch {
         // A failed token request may never have created a billable session.
         // Preserve the original authorization/connection error instead of
         // replacing it with a misleading billing-only message.
-        setError((current) =>
-          current || 'Live billing is awaiting reconciliation. Please contact support if your credits do not return.'
+        setError(
+          (current) =>
+            current ||
+            'Live billing is awaiting reconciliation. Please contact support if your credits do not return.'
         );
       } finally {
         setSettling(false);
@@ -205,7 +258,9 @@ export function LiveFaceSwapPanel() {
       if (sessionId && navigator.sendBeacon) {
         navigator.sendBeacon(
           '/api/live-face-swap/stop',
-          new Blob([JSON.stringify({ sessionId })], { type: 'application/json' })
+          new Blob([JSON.stringify({ sessionId })], {
+            type: 'application/json',
+          })
         );
       }
       stopAll();
@@ -222,6 +277,28 @@ export function LiveFaceSwapPanel() {
       if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current);
     };
   }, [stopAll]);
+
+  function clearReference() {
+    photoSelectionRef.current += 1;
+    if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current);
+    photoUrlRef.current = null;
+    setPhotoPreview(null);
+    setReferenceData(null);
+    setReferenceSource(null);
+    setGalleryId(null);
+  }
+
+  function selectGalleryReference(item: (typeof REFERENCE_GALLERY)[number]) {
+    if (phase === 'connecting' || phase === 'live') return;
+    setError('');
+    photoSelectionRef.current += 1;
+    if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current);
+    photoUrlRef.current = null;
+    setGalleryId(item.id);
+    setReferenceSource('gallery');
+    setPhotoPreview(item.url);
+    setReferenceData(item.url);
+  }
 
   async function pickPhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -247,11 +324,15 @@ export function LiveFaceSwapPanel() {
       if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current);
       const url = URL.createObjectURL(file);
       photoUrlRef.current = url;
+      setGalleryId(null);
+      setReferenceSource('upload');
       setPhotoPreview(url);
       setReferenceData(photo.data);
     } catch (cause) {
       if (selection === photoSelectionRef.current)
-        setError(cause instanceof Error ? cause.message : 'Invalid reference image.');
+        setError(
+          cause instanceof Error ? cause.message : 'Invalid reference image.'
+        );
     }
   }
 
@@ -262,10 +343,16 @@ export function LiveFaceSwapPanel() {
     const attempt = ++cameraAttemptRef.current;
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('Camera access requires an HTTPS page and a supported browser.');
+        throw new Error(
+          'Camera access requires an HTTPS page and a supported browser.'
+        );
       }
       const camera = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: 'user',
+        },
         audio: false,
       });
       if (attempt !== cameraAttemptRef.current) {
@@ -293,11 +380,19 @@ export function LiveFaceSwapPanel() {
 
   async function startLive() {
     const camera = cameraRef.current;
-    if (!camera || !camera.active || !referenceData || !consent || settling || phase !== 'camera-ready') {
+    if (
+      !camera ||
+      !camera.active ||
+      !referenceData ||
+      !consent ||
+      settling ||
+      phase !== 'camera-ready'
+    ) {
       return;
     }
     if (!authSession?.user) {
-      setError('Sign in before starting a live session.');
+      // No #hash: better-auth social callbackURL rejects fragments.
+      window.location.href = `/sign-in?callbackUrl=${encodeURIComponent('/live-face-swap')}`;
       return;
     }
     const balance = creditsQuery.data?.balance;
@@ -343,7 +438,10 @@ export function LiveFaceSwapPanel() {
           } catch (cause) {
             // Show the real token endpoint failure before async stop cleanup.
             // Provider errors remain sanitized by the server API envelope.
-            if (operation === operationRef.current && cause instanceof ApiError) {
+            if (
+              operation === operationRef.current &&
+              cause instanceof ApiError
+            ) {
               setError(cause.message);
             }
             // api-client unwraps the same { code, message, data } envelope
@@ -357,7 +455,9 @@ export function LiveFaceSwapPanel() {
                 typeof data?.requiredCredits === 'number' &&
                 typeof data.balance === 'number'
               ) {
-                queryClient.setQueryData(['user-credits'], { balance: data.balance });
+                queryClient.setQueryData(['user-credits'], {
+                  balance: data.balance,
+                });
                 creditGate.open({
                   requiredCredits: data.requiredCredits,
                   balance: data.balance,
@@ -375,7 +475,9 @@ export function LiveFaceSwapPanel() {
           }
           if (operation !== operationRef.current) {
             // Tab was closed while authorization was in flight.
-            void apiPost('/api/live-face-swap/stop', { sessionId }).catch(() => undefined);
+            void apiPost('/api/live-face-swap/stop', { sessionId }).catch(
+              () => undefined
+            );
             throw new Error('Live session canceled');
           }
           paidRef.current = paid;
@@ -404,9 +506,13 @@ export function LiveFaceSwapPanel() {
               setClockMs(now);
               const paid = paidRef.current;
               if (!paid) return;
-              setElapsed(Math.max(0, Math.floor((now - paid.issuedAtMs) / 1000)));
+              setElapsed(
+                Math.max(0, Math.floor((now - paid.issuedAtMs) / 1000))
+              );
               if (now >= paid.paidUntilMs) {
-                setError('Your prepaid live time has ended. Start a new session to continue.');
+                setError(
+                  'Your prepaid live time has ended. Start a new session to continue.'
+                );
                 void stopLive();
                 return;
               }
@@ -415,10 +521,13 @@ export function LiveFaceSwapPanel() {
                 !outputRef.current?.getVideoTracks().length ||
                 now < paid.paidUntilMs - 8_000 ||
                 renewingRef.current
-              ) return;
+              )
+                return;
 
               if (paid.sequence + 1 >= LIVE_FACE_SWAP_MAX_CHUNKS) {
-                setError('This session has reached its safety limit. You may start another.');
+                setError(
+                  'This session has reached its safety limit. You may start another.'
+                );
                 void stopLive();
                 return;
               }
@@ -439,7 +548,9 @@ export function LiveFaceSwapPanel() {
                   }
                   paidRef.current = next;
                   setBilling(next);
-                  void queryClient.invalidateQueries({ queryKey: ['user-credits'] });
+                  void queryClient.invalidateQueries({
+                    queryKey: ['user-credits'],
+                  });
                 })
                 .catch((cause) => {
                   if (operation !== operationRef.current) return;
@@ -448,13 +559,24 @@ export function LiveFaceSwapPanel() {
                   if (
                     cause instanceof ApiError &&
                     cause.data &&
-                    typeof (cause.data as { balance?: unknown }).balance === 'number'
+                    typeof (cause.data as { balance?: unknown }).balance ===
+                      'number'
                   ) {
-                    const data = cause.data as { balance: number; requiredCredits?: number };
+                    const data = cause.data as {
+                      balance: number;
+                      requiredCredits?: number;
+                    };
                     if (typeof data.requiredCredits === 'number') {
-                      queryClient.setQueryData(['user-credits'], { balance: data.balance });
-                      creditGate.open({ balance: data.balance, requiredCredits: data.requiredCredits });
-                      setError('Not enough credits to continue the live session.');
+                      queryClient.setQueryData(['user-credits'], {
+                        balance: data.balance,
+                      });
+                      creditGate.open({
+                        balance: data.balance,
+                        requiredCredits: data.requiredCredits,
+                      });
+                      setError(
+                        'Not enough credits to continue the live session.'
+                      );
                       void stopLive();
                     }
                   }
@@ -467,7 +589,9 @@ export function LiveFaceSwapPanel() {
             }, 500);
           }
           if (state === 'failed') {
-            setError((current) => current || 'The live connection failed. Try again.');
+            setError(
+              (current) => current || 'The live connection failed. Try again.'
+            );
             void stopLive();
           } else if (state === 'closed') {
             void stopLive();
@@ -475,7 +599,11 @@ export function LiveFaceSwapPanel() {
         },
         onError: () => {
           if (operation === operationRef.current) {
-            setError((current) => current || 'Unable to connect to the live service. Check your access and try again.');
+            setError(
+              (current) =>
+                current ||
+                'Unable to connect to the live service. Check your access and try again.'
+            );
             void stopLive();
           }
         },
@@ -486,165 +614,267 @@ export function LiveFaceSwapPanel() {
       void handle.ready.catch(() => undefined);
     } catch (cause) {
       if (operation === operationRef.current) {
-        setError(cause instanceof Error ? cause.message : 'Could not start the live session.');
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : 'Could not start the live session.'
+        );
         void stopLive();
       }
     }
   }
 
   const active = phase === 'live' || phase === 'connecting';
-  const canStart = Boolean(referenceData && consent && authSession?.user && cameraRef.current && !active && !settling);
-  const secondsLeft = billing ? Math.max(0, Math.ceil((billing.paidUntilMs - clockMs) / 1000)) : 0;
+  const canStart = Boolean(
+    referenceData && consent && cameraRef.current && !active && !settling
+  );
+  const secondsLeft = billing
+    ? Math.max(0, Math.ceil((billing.paidUntilMs - clockMs) / 1000))
+    : 0;
+  const cameraOn = phase !== 'idle' && phase !== 'camera-starting';
+  const statusLabel =
+    phase === 'connecting'
+      ? 'Connecting'
+      : phase === 'live'
+        ? `Live · ${secondsLeft}s`
+        : settling
+          ? 'Settling'
+          : phase === 'camera-ready'
+            ? 'Ready'
+            : phase === 'camera-starting'
+              ? 'Opening camera'
+              : 'Idle';
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(34,26,23,0.94)] shadow-[0_35px_100px_rgba(0,0,0,0.35)]">
-      <div className="grid gap-0 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <div className="space-y-5 border-b border-white/10 p-5 sm:p-7 lg:border-r lg:border-b-0">
-          <div>
-            <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#dc9b63]">
-              <ImagePlus className="size-4" /> Step 1
+    <div className="mx-auto w-full max-w-[1180px] overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(34,26,23,0.94)] shadow-[0_35px_100px_rgba(0,0,0,0.35)]">
+      <div className="grid gap-0 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="space-y-4 border-b border-white/10 p-4 sm:p-5 lg:border-r lg:border-b-0">
+          <section className="overflow-hidden rounded-2xl border border-white/10 bg-black/25">
+            <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3.5 py-2.5">
+              <p className="text-sm font-semibold text-white/88">
+                Camera input
+              </p>
+              <span className="text-xs text-white/40">
+                {cameraOn ? 'Preview on' : 'Preview off'}
+              </span>
             </div>
-            <h2 className="text-lg font-semibold text-white/90">Reference face</h2>
-            <p className="mt-1 text-sm leading-6 text-white/45">
-              Upload a clear portrait. Only use a face you have permission to edit.
-            </p>
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            onChange={(event) => void pickPhoto(event)}
-          />
-          {photoPreview ? (
-            <div className="relative flex h-48 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-black/40">
-              <img className="h-full w-full object-contain" src={photoPreview} alt="Reference face preview" />
+            <div className="relative aspect-[4/3] bg-[#130f0e]">
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className={cn(
+                  'absolute inset-0 h-full w-full -scale-x-100 object-cover',
+                  !cameraOn && 'opacity-0'
+                )}
+              />
+              {!cameraOn ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4">
+                  <button
+                    type="button"
+                    className={cn(
+                      buttonSecondary,
+                      'min-h-12 rounded-full bg-white px-5 text-[#1a1410] hover:bg-white/92'
+                    )}
+                    disabled={phase === 'camera-starting' || settling}
+                    onClick={() => void startCamera()}
+                  >
+                    {phase === 'camera-starting' ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Camera className="size-4" />
+                    )}
+                    {phase === 'camera-starting' ? 'Opening…' : 'Open camera'}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            {cameraOn && !active ? (
+              <div className="border-t border-white/10 px-3.5 py-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 text-xs text-white/45 hover:text-white/80"
+                  onClick={stopAll}
+                  disabled={settling}
+                >
+                  <CameraOff className="size-3.5" /> Turn camera off
+                </button>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="rounded-2xl border border-white/10 bg-black/20 p-3.5">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-white/88">Reference</p>
+              <span className="text-[11px] text-white/35">
+                {LIVE_FACE_SWAP_CREDITS_PER_SECOND} credits/s
+              </span>
+            </div>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={(event) => void pickPhoto(event)}
+            />
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                title="Remove reference photo"
-                aria-label="Remove reference photo"
-                disabled={active}
-                onClick={() => {
-                  photoSelectionRef.current += 1;
-                  if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current);
-                  photoUrlRef.current = null;
-                  setPhotoPreview(null);
-                  setReferenceData(null);
-                }}
-                className="absolute top-2 right-2 rounded-full bg-black/70 p-2 text-white hover:bg-black disabled:opacity-35"
+                disabled={active || settling}
+                onClick={() => inputRef.current?.click()}
+                className={cn(
+                  'relative flex aspect-square flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl border border-dashed text-white/55 transition',
+                  referenceSource === 'upload'
+                    ? 'border-[#d79b6a]/70 bg-[rgba(215,155,106,0.12)] text-[#edb685]'
+                    : 'border-white/18 bg-white/[0.03] hover:border-[#d79b6a]/45 hover:bg-white/[0.05]',
+                  (active || settling) && 'opacity-40'
+                )}
               >
-                <X className="size-4" />
+                {referenceSource === 'upload' && photoPreview ? (
+                  <>
+                    <img
+                      src={photoPreview}
+                      alt="Uploaded reference"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <span className="absolute top-1.5 right-1.5 inline-flex size-5 items-center justify-center rounded-full bg-[#d79b6a] text-[#24170f] shadow">
+                      <Check className="size-3 stroke-[3]" />
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="size-4" />
+                    <span className="text-[11px] font-medium">Upload</span>
+                  </>
+                )}
               </button>
+              {REFERENCE_GALLERY.map((item) => {
+                const selected = galleryId === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    disabled={active || settling}
+                    title={item.label}
+                    aria-pressed={selected}
+                    onClick={() => selectGalleryReference(item)}
+                    className={cn(
+                      'relative aspect-square overflow-hidden rounded-xl border transition',
+                      selected
+                        ? 'border-[#7ec87a] ring-2 ring-[#7ec87a]/35'
+                        : 'border-white/10 hover:border-white/25',
+                      (active || settling) && 'opacity-40'
+                    )}
+                  >
+                    <img
+                      src={item.url}
+                      alt={item.label}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {selected ? (
+                      <span className="absolute top-1.5 right-1.5 inline-flex size-5 items-center justify-center rounded-full bg-[#4faf5a] text-white shadow">
+                        <Check className="size-3 stroke-[3]" />
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              disabled={active}
-              className="flex h-48 w-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/20 bg-white/[0.025] text-white/65 hover:border-[#d79b6a]/50 hover:bg-white/[0.045] disabled:opacity-30"
-            >
-              <ImagePlus className="size-8 text-[#d79b6a]" />
-              <span className="text-sm font-medium">Choose a face photo</span>
-              <span className="text-xs text-white/35">JPG, PNG, WebP · Min 512 × 512 · Max 8 MB</span>
-            </button>
-          )}
-          {photoPreview && !active ? (
-            <button
-              type="button"
-              className="text-xs font-medium text-[#dc9b63] underline underline-offset-4"
-              onClick={() => inputRef.current?.click()}
-            >
-              Change photo
-            </button>
-          ) : null}
-          <div className="border-t border-white/10 pt-5">
-            <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#dc9b63]">
-              <Camera className="size-4" /> Step 2
-            </div>
-            <h2 className="text-lg font-semibold text-white/90">Camera &amp; consent</h2>
-            <p className="mt-1 text-sm leading-6 text-white/45">
-              Your camera feed is processed by our live processing service while connected.
-            </p>
-          </div>
-          <label className="flex cursor-pointer items-start gap-3 text-xs leading-5 text-white/65">
+            {photoPreview ? (
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <p className="truncate text-[11px] text-white/40">
+                  {referenceSource === 'gallery'
+                    ? 'Gallery reference selected'
+                    : 'Custom upload selected'}
+                </p>
+                {!active && !settling ? (
+                  <button
+                    type="button"
+                    className="shrink-0 text-[11px] font-medium text-[#dc9b63] underline underline-offset-2"
+                    onClick={clearReference}
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-3 text-[11px] leading-4 text-white/35">
+                Upload a portrait or pick a preset. Uploads: JPG/PNG/WebP · min
+                512×512 · max 8 MB.
+              </p>
+            )}
+          </section>
+
+          <label className="flex cursor-pointer items-start gap-2.5 px-0.5 text-[11px] leading-4 text-white/55">
             <input
               type="checkbox"
               checked={consent}
-              disabled={active}
+              disabled={active || settling}
               onChange={(event) => setConsent(event.target.checked)}
-              className="mt-0.5 size-4 accent-[#d99a68]"
+              className="mt-0.5 size-3.5 accent-[#d99a68]"
             />
-            I have permission to use the reference face and agree to the real-time processing of my camera stream.
+            I have permission to use this reference face and agree to live
+            processing of my camera stream.
           </label>
-          <div className="space-y-2">
-            {phase === 'idle' || phase === 'camera-starting' ? (
-              <button type="button" className={buttonSecondary + ' w-full'} disabled={phase === 'camera-starting'} onClick={() => void startCamera()}>
-                {phase === 'camera-starting' ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
-                {phase === 'camera-starting' ? 'Opening camera...' : 'Enable camera'}
-              </button>
-            ) : null}
-            {phase === 'camera-ready' ? (
-              <button
-                type="button"
-                className={buttonPrimary + ' w-full'}
-                disabled={!canStart || authPending}
-                onClick={() => void startLive()}
-              >
-                <WandSparkles className="size-4" /> Start live face swap · {LIVE_FACE_SWAP_CREDITS} credits
-              </button>
-            ) : null}
-            {active ? (
-              <button type="button" className={buttonSecondary + ' w-full'} onClick={() => void stopLive()}>
-                <Square className="size-4" /> Stop live swap
-              </button>
-            ) : null}
-            {phase !== 'idle' && phase !== 'camera-starting' && !active ? (
-              <button type="button" className="flex min-h-9 w-full items-center justify-center gap-2 text-xs text-white/45 hover:text-white/80" onClick={stopAll}>
-                <CameraOff className="size-3.5" /> Turn camera off
-              </button>
-            ) : null}
-          </div>
-          {!authPending && !authSession?.user ? (
-            <p className="text-xs text-amber-200/80">Sign in to start a live session.</p>
-          ) : null}
-          {error ? (
-            <div role="alert" className="flex gap-2 rounded-xl border border-red-500/25 bg-red-500/[0.08] p-3 text-xs leading-5 text-red-200">
-              <CircleAlert className="mt-0.5 size-4 shrink-0" /> {error}
-            </div>
-          ) : null}
-          <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3 text-xs leading-5 text-white/65">
+
+          <label className="flex items-center gap-2 px-0.5 text-[11px] text-white/55">
+            <input
+              type="checkbox"
+              checked={autoRenew}
+              disabled={active || settling}
+              onChange={(event) => setAutoRenew(event.target.checked)}
+              className="size-3.5 accent-[#d99a68]"
+            />
+            Auto-renew every {LIVE_FACE_SWAP_SECONDS}s
+          </label>
+
+          <div className="rounded-xl border border-white/10 bg-white/[0.025] px-3 py-2.5 text-[11px] leading-4 text-white/60">
             <div className="flex justify-between gap-2">
-              <span>Credit balance</span>
+              <span>Balance</span>
               <span className="font-semibold text-[#edb685] tabular-nums">
                 {creditsQuery.data?.balance?.toLocaleString() ?? '—'}
               </span>
             </div>
             <div className="mt-1 flex justify-between gap-2">
-              <span>Live rate</span>
-              <span className="text-right">
-                {LIVE_FACE_SWAP_CREDITS_PER_SECOND} credits/s · {LIVE_FACE_SWAP_CREDITS} per {LIVE_FACE_SWAP_SECONDS}s
+              <span>Prepaid chunk</span>
+              <span>
+                {LIVE_FACE_SWAP_CREDITS} credits / {LIVE_FACE_SWAP_SECONDS}s
               </span>
             </div>
             {billing ? (
               <>
                 <div className="mt-1 flex justify-between gap-2">
-                  <span>Credits reserved this session</span>
-                  <span className="font-medium">{billing.chargedCredits} credits</span>
+                  <span>Reserved</span>
+                  <span>{billing.chargedCredits} credits</span>
                 </div>
                 <div className="mt-1 flex justify-between gap-2">
-                  <span>Prepaid time left</span>
-                  <span>{secondsLeft}s {renewing ? '· Renewing...' : ''}</span>
+                  <span>Time left</span>
+                  <span>
+                    {secondsLeft}s{renewing ? ' · Renewing…' : ''}
+                  </span>
                 </div>
               </>
             ) : null}
             {settling ? (
-              <div className="mt-2 text-amber-200/80">Calculating final charge and unused-credit refund...</div>
+              <div className="mt-2 text-amber-200/80">
+                Calculating final charge and unused-credit refund…
+              </div>
             ) : null}
             {settlement ? (
               <div className="mt-2 rounded-lg border border-white/10 p-2 text-white/80">
                 <div className="flex justify-between gap-2">
-                  <span>{settlement.status === 'settled' ? 'Final charge (server-time estimate)' : 'Estimated usage (not finalized)'}</span>
-                  <span className="font-semibold">{settlement.chargedCredits} credits · {settlement.billedSeconds}s</span>
+                  <span>
+                    {settlement.status === 'settled'
+                      ? 'Final charge'
+                      : 'Estimated usage (not finalized)'}
+                  </span>
+                  <span className="font-semibold">
+                    {settlement.chargedCredits} credits ·{' '}
+                    {settlement.billedSeconds}s
+                  </span>
                 </div>
                 {settlement.status === 'settled' ? (
                   <div className="flex justify-between gap-2">
@@ -652,83 +882,118 @@ export function LiveFaceSwapPanel() {
                     <span>{settlement.refundedCredits} credits</span>
                   </div>
                 ) : (
-                  <p className="mt-1 text-amber-200/80">Reserved credits remain held pending manual review. No refund confirmed.</p>
+                  <p className="mt-1 text-amber-200/80">
+                    Reserved credits remain held pending review.
+                  </p>
                 )}
               </div>
             ) : null}
           </div>
-          <label className="flex items-center gap-2 text-xs text-white/65">
-            <input type="checkbox" checked={autoRenew} disabled={active}
-              onChange={(event) => setAutoRenew(event.target.checked)}
-              className="size-4 accent-[#d99a68]" />
-            Auto-renew every {LIVE_FACE_SWAP_SECONDS}s while connected
-          </label>
-          <p className="text-xs leading-5 text-white/35">
-            We reserve {LIVE_FACE_SWAP_CREDITS} credits per {LIVE_FACE_SWAP_SECONDS}s, then estimate
-            actual used seconds from server token issuance to session stop (rounded up).
-            Unused reserved credits are returned on successful settlement. This is
-            not verified provider billing; failed or interrupted sessions may need
-            manual reconciliation. Limited pilot; provider-side duration enforcement
-            is not yet available.
+
+          <p className="px-0.5 text-[11px] leading-4 text-white/35">
+            We reserve {LIVE_FACE_SWAP_CREDITS} credits per{' '}
+            {LIVE_FACE_SWAP_SECONDS}s, then estimate used seconds from token
+            issuance to stop. Unused reserved credits return on successful
+            settlement. Preview-only pilot — not verified provider billing.
           </p>
+
+          {error ? (
+            <div
+              role="alert"
+              className="flex gap-2 rounded-xl border border-red-500/25 bg-red-500/[0.08] p-3 text-[11px] leading-4 text-red-200"
+            >
+              <CircleAlert className="mt-0.5 size-3.5 shrink-0" /> {error}
+            </div>
+          ) : null}
         </div>
 
-        <div className="space-y-5 p-5 sm:p-7">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-white/90">Live studio</h2>
-              <p className="mt-1 text-sm text-white/45">Watch the camera and AI result side by side.</p>
-            </div>
-            <span className={'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ' +
-              (phase === 'live' ? 'border-green-500/30 bg-green-500/10 text-green-300' : 'border-white/10 bg-white/[0.04] text-white/55')}>
-              <span className={'size-1.5 rounded-full ' + (phase === 'live' ? 'animate-pulse bg-green-400' : 'bg-white/35')} />
-              {phase === 'connecting' ? 'Connecting...' : phase === 'live' ? 'Live · ' + secondsLeft + 's prepaid' : phase === 'camera-ready' ? 'Camera ready' : 'Offline'}
+        <div className="flex min-h-[520px] flex-col p-4 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-white/88">
+              Live AI output
+            </p>
+            <span
+              className={cn(
+                'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium',
+                phase === 'live'
+                  ? 'border-green-500/30 bg-green-500/10 text-green-300'
+                  : 'border-white/10 bg-white/[0.04] text-white/55'
+              )}
+            >
+              <span
+                className={cn(
+                  'size-1.5 rounded-full',
+                  phase === 'live'
+                    ? 'animate-pulse bg-green-400'
+                    : 'bg-white/35'
+                )}
+              />
+              {statusLabel}
             </span>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/10 bg-[#130f0e] sm:aspect-[4/5]">
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="absolute inset-0 h-full w-full -scale-x-100 object-cover"
-              />
-              {phase === 'idle' || phase === 'camera-starting' ? (
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/35">
-                  <Camera className="size-10" />
-                  <span className="text-sm">Camera preview</span>
-                </div>
-              ) : null}
-              <span className="absolute bottom-3 left-3 rounded-lg border border-white/10 bg-black/60 px-2.5 py-1 text-xs text-white/85">
-                Original
-              </span>
-            </div>
-            <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-[rgba(215,155,106,0.22)] bg-[#130f0e] sm:aspect-[4/5]">
-              <video
-                ref={outputVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="absolute inset-0 h-full w-full -scale-x-100 object-cover"
-              />
-              {!hasRemoteVideo ? (
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-white/35">
-                  {phase === 'connecting' ? <Loader2 className="size-10 animate-spin text-[#d79b6a]" /> : <WandSparkles className="size-10 text-[#d79b6a]/55" />}
-                  <span className="text-sm">{phase === 'connecting' ? 'Preparing live output...' : 'AI result will appear here'}</span>
-                </div>
-              ) : null}
-              <span className="absolute bottom-3 left-3 rounded-lg border border-[rgba(215,155,106,0.3)] bg-black/60 px-2.5 py-1 text-xs text-[#edb685]">
-                AI output
-              </span>
-            </div>
+          <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10 bg-[#0f0c0b]">
+            <video
+              ref={outputVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="absolute inset-0 h-full w-full -scale-x-100 object-contain"
+            />
+
+            {!hasRemoteVideo ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
+                {phase === 'connecting' || settling ? (
+                  <>
+                    <Loader2 className="size-10 animate-spin text-[#d79b6a]" />
+                    <p className="text-sm text-white/45">
+                      {settling
+                        ? 'Settling credits…'
+                        : 'Preparing live output…'}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className={buttonStart}
+                      disabled={!canStart || authPending}
+                      onClick={() => void startLive()}
+                    >
+                      <WandSparkles className="size-5" />
+                      Start Face Swap
+                    </button>
+                    <p className="max-w-sm text-xs leading-5 text-white/40">
+                      {!cameraOn
+                        ? 'Open your camera, pick a reference, then start.'
+                        : !referenceData
+                          ? 'Choose a reference face to continue.'
+                          : !consent
+                            ? 'Confirm consent before starting.'
+                            : `Credit usage starts when AI output appears · ${LIVE_FACE_SWAP_CREDITS} credits / ${LIVE_FACE_SWAP_SECONDS}s`}
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : null}
+
+            {active ? (
+              <div className="absolute top-3 right-3">
+                <button
+                  type="button"
+                  className={buttonSecondary}
+                  onClick={() => void stopLive()}
+                >
+                  <Square className="size-4" /> Stop
+                </button>
+              </div>
+            ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-white/40">
-            <Play className="size-3.5" />
-            For best results, keep one person centered with clear lighting. The live swap may alter more than just the face.
-          </div>
+          <p className="mt-3 text-xs text-white/35">
+            Keep one person centered with clear lighting for best results.
+            Real-time preview only.
+          </p>
         </div>
       </div>
       <InsufficientCreditsModal
