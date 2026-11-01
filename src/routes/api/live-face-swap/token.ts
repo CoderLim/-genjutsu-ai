@@ -132,11 +132,17 @@ async function POST({ request }: { request: Request }) {
     const token = readFalToken(await upstream.text());
     if (!token) throw new Error('Invalid live service response');
 
+    // Do the final potentially-failing balance read BEFORE changing the
+    // reservation into 'active'. That keeps a pre-delivery failure refundable.
+    const balance = await getBalance(userId);
+    const paid = reservedNewSession
+      ? null
+      : await getLiveFaceSwapPaidState({ sessionId, userId });
     const issuedAtMs = reservedNewSession
       ? await activateLiveFaceSwapSession({ sessionId, userId })
-      : undefined;
-    const paid = await getLiveFaceSwapPaidState({ sessionId, userId });
-    if (Date.now() > paid.paidUntilMs) {
+      : paid!.issuedAtMs;
+    const paidUntilMs = paid?.paidUntilMs ?? issuedAtMs + 30_000;
+    if (Date.now() > paidUntilMs) {
       throw new Error('Live authorization expired');
     }
 
@@ -144,12 +150,12 @@ async function POST({ request }: { request: Request }) {
       {
         token,
         sessionId,
-        issuedAtMs: issuedAtMs ?? paid.issuedAtMs,
-        paidUntilMs: paid.paidUntilMs,
-        sequence: paid.sequence,
-        chargedCredits: paid.chargedCredits,
+        issuedAtMs,
+        paidUntilMs,
+        sequence: paid?.sequence ?? 0,
+        chargedCredits: paid?.chargedCredits ?? LIVE_FACE_SWAP_CREDITS,
         creditsPerChunk: LIVE_FACE_SWAP_CREDITS,
-        balance: await getBalance(userId),
+        balance,
       },
       { headers: { 'Cache-Control': 'no-store, private' } }
     );
