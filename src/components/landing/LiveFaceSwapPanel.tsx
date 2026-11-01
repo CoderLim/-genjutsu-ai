@@ -103,6 +103,7 @@ export function LiveFaceSwapPanel() {
   const photoUrlRef = useRef<string | null>(null);
   const photoSelectionRef = useRef(0);
   const operationRef = useRef(0);
+  const cameraAttemptRef = useRef(0);
 
   const releaseTimers = useCallback(() => {
     if (durationTimerRef.current) clearInterval(durationTimerRef.current);
@@ -146,6 +147,7 @@ export function LiveFaceSwapPanel() {
   }, [releaseTimers, stopRecording]);
 
   const stopAll = useCallback(() => {
+    cameraAttemptRef.current += 1;
     void stopLive();
     const camera = cameraRef.current;
     cameraRef.current = null;
@@ -209,6 +211,7 @@ export function LiveFaceSwapPanel() {
     if (cameraRef.current || phase !== 'idle') return;
     setError('');
     setPhase('camera-starting');
+    const attempt = ++cameraAttemptRef.current;
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('Camera access requires an HTTPS page and a supported browser.');
@@ -217,6 +220,10 @@ export function LiveFaceSwapPanel() {
         video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
         audio: false,
       });
+      if (attempt !== cameraAttemptRef.current) {
+        camera.getTracks().forEach((track) => track.stop());
+        return;
+      }
       cameraRef.current = camera;
       const track = camera.getVideoTracks()[0];
       if (track) track.onended = stopAll;
@@ -226,6 +233,7 @@ export function LiveFaceSwapPanel() {
       }
       setPhase('camera-ready');
     } catch (cause) {
+      if (attempt !== cameraAttemptRef.current) return;
       setPhase('idle');
       setError(
         cause instanceof Error
