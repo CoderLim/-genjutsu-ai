@@ -209,7 +209,7 @@ export async function reserveLiveFaceSwapSession(params: {
         like(aiTask.options, '%"kind":"live-session"%')
       )
     );
-  if (Number(recent?.total ?? 0) >= 20) {
+  if (Number(recent?.total ?? 0) >= 5) {
     throw new LiveFaceSwapSessionConflictError('Daily pilot limit reached');
   }
   await chargeChunk({
