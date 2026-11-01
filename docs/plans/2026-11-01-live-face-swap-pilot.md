@@ -1,46 +1,48 @@
-# Live Face Swap — Lucy 2.5 functional pilot (2026-11-01)
+# Live Face Swap — Lucy 2.5 INTERNAL pilot (2026-11-01)
 
-## Scope
+## Scope and integration
 
-- New route: /live-face-swap with existing dark/warm Genjutsu theme, SiteHeader and SiteFooter.
-- Frontend: upload a portrait (JPG/PNG/WebP, at least 512x512, <=8 MiB), request webcam permission, local camera preview, WebRTC Lucy output, optional 10-second MediaRecorder capture and local download. Sessions are not limited to 30 seconds: opt-in auto-renewal buys successive prepaid 30-second chunks until the user stops, credits run out or the per-connection safety ceiling is reached.
-- Provider: fal \`decart/lucy-2-5/realtime\`, explicit face-preservation prompt with prompt expansion off.
-- Backend: /api/live-face-swap/token, minted with the server-only \`FAL_KEY\`, scoped to \`lucy-2-5\`, short-lived token, requires authentication and authorized pilot tester. /renew precharges a unique next time chunk; /stop marks the root session closed.
-- No SEO body/FAQ/schema/sitemap additions. Page temporarily has \`noindex,nofollow\`.
-- Reuses existing credit consume/revoke and AI task persistence; no schema migration or edits to existing video-face-swap, Genjutsu workflows or R2 paths.
+- New route: `/live-face-swap`. Uses existing Genjutsu theme, SiteHeader, SiteFooter; no SEO prose, nav or sitemap. `noindex,nofollow` remains in place.
+- Browser: portrait upload, camera permission, side-by-side WebRTC preview, optional 10s recording/download, and auto-renewable prepaid credits.
+- fal model: `decart/lucy-2-5/realtime`. This is generative character editing; hair, face identity or scene preservation is not guaranteed.
+- API routes: `/api/live-face-swap/token`, `/renew`, `/stop`. Each requires an authenticated, same-origin POST (requests with missing or invalid `Origin` are rejected with 403).
+- The token endpoint resolves the **existing site Fal key** using `(await getConfig('fal_api_key'))?.trim()`. Set it through **Admin → Settings → AI → Fal**; the global config layer also supports the existing `FAL_KEY` environment fallback. Never pass the master key to the browser.
+- The token endpoint requires `LIVE_FACE_SWAP_ENABLED === 'true'` AND a matching email in `LIVE_FACE_SWAP_ALLOWED_EMAILS`. **Admin roles do not bypass the allowlist.**
+- Only English customer copy is currently implemented. This is an **English-only internal pilot**: follow-up i18n work must extract `site.live_face_swap.*` and translate all enabled locales before any public/localized launch.
 
-## Enabling a local or staging pilot
+## Non-negotiable cost / rollout boundary
 
-1. Install dependencies: \`pnpm install --frozen-lockfile\` (requires Node 22 and pnpm 10).
-2. Set \`FAL_KEY\` with a funded fal account.
-3. Set \`LIVE_FACE_SWAP_ENABLED=true\`.
-4. Sign in with a user granted \`admin.*\` or set \`LIVE_FACE_SWAP_ALLOWED_EMAILS=your-email@example.com\`.
-5. Run \`pnpm dev\` and visit \`/live-face-swap\` in a browser with camera access (localhost or HTTPS).
-6. Upload an authorized 512x512+ portrait, enable the camera, confirm consent, start the live session, record and download a test clip.
+**Keep `LIVE_FACE_SWAP_ENABLED=false` in production and in the committed `.env.example`. Do not make this pilot public, even for paid users, until a server-enforceable media/session lifetime and provider usage reconciliation are available.**
 
-## Important rollout restrictions
+- Provider list price used for budgeting: **$0.04 per processed second**, equivalent to **$1.20 for 30s**, **$2.40 per minute**, **$144 per continuous hour** (pricing can change; verify the provider account). This is actual upstream spending exposure, regardless of customer wallet state.
+- The site already **precharges 204 credits per 30-second chunk**, through the existing credit `consume/revoke` ledger. The browser auto-renews shortly before its current prepaid interval expires. The server records deterministic chunk IDs to avoid duplicate charges for the same chunk.
+- **This is NOT real-time upstream usage settlement.** There is no reconciliation against the actual provider stream duration or invoice and no server-enforced WebRTC lease. A customer running out of credits stops the browser *in normal use*, but does not terminate a malicious or stuck provider session.
+- The **browser's 30s prepaid timer**, **JWT expiration of 120 seconds**, the **per-session 120-chunk billing ceiling** and the **5 new sessions per user in a rolling 24h pilot quota** are **not hard provider cost caps**. Neither JWT expiry nor ending the task record can revoke an already established WebRTC stream. The 5-session check is DB-based but is not a distributed lock.
+- The feature flag and explicit allowlist are the only deployment controls in this PR. Token replay and unlimited established WebRTC duration are unresolved. Do **not** switch on the flag for public traffic.
+- Refunds are attempted if initial token minting fails before token issuance; once the token is issued, prepaid intervals are not prorated. D1's compatibility layer is not an atomic transaction; `charging`/`refunding` rows require reconciliation after failures.
+- The process-local rate limiter is not cross-Worker protection. Before a public launch implement a server-enforced lease or controllable media relay, distributed one-active-session limits, safe token consumption/replay protection and provider billing reconciliation.
 
-This is **pilot-only**, NOT a public billing implementation.
+## Local / staging-only opt-in verification
 
-- fal currently charges **$0.04 per processed second** (check live pricing before launch). Genjutsu bills **204 credits for each prepaid 30-second chunk** using the existing 1.7x multiplier; a user can stay connected beyond 30 seconds with auto-renewal.
-- The client-side paid-through timer stops the camera/connection when renewal fails. It is **not** a provider-side enforcement mechanism. Short-lived JWT expiry does **not** shut down an established WebRTC session; WebRTC media flows browser-to-Decart peer-to-peer through fal signaling.
-- Do not make the token endpoint public or remove the admin/allowlist gate until provider-enforced shutdown or a controllable media relay, distributed concurrency protection, and provider usage reconciliation are implemented and verified. Charging credits alone is not sufficient to control upstream spend.
-- The current min-interval limiter uses process-local memory and is insufficient on its own for public distributed rate limiting. Charging uses unique ai_task keys per chunk; the D1 transaction compatibility shim is non-atomic. Uncertain charging and refunding states require manual reconciliation.
-- The \`@fal-ai/client/realtime\` protocol-aware extension is experimental; pin and retest on upgrades.
-- Lucy is a generative character swap model; precise face-only identity replacement, hair/scene preservation and real-person consistency are not guaranteed.
-- Images are passed directly to fal as data URIs from the browser, and raw camera video is sent to the provider via WebRTC. Reference images and recordings are not stored by our app in this pilot.
-- MediaRecorder output varies by browser (WebM / MP4), and some browsers do not support recording.
-- Close/tab hide/navigation stops local resources and sends a best-effort stop report, but cannot be treated as an enforceable upstream spending cap. Prepaid chunks are fixed price and are not prorated on user stop. An initial chunk is refunded if token minting fails before issuance.
+1. `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm build`.
+2. Configure the existing Fal key via **Admin → Settings → AI → Fal** (or existing environment fallback).
+3. Set `LIVE_FACE_SWAP_ENABLED=true` **only in an isolated, budgeted development/staging environment**; set `LIVE_FACE_SWAP_ALLOWED_EMAILS=your-tester@example.com`. **Never enable this flag in production.**
+4. Sign in *as an explicitly listed tester*. An admin not in the allowlist should receive 403.
+5. Visit `/live-face-swap` on localhost or HTTPS, upload an authorized portrait, consent, start, record and stop.
 
-## Verification checklist
+### Acceptance checklist
 
-- [ ] \`pnpm install --frozen-lockfile\`, \`pnpm test\`, \`pnpm build\`, \`pnpm cf:build\`.
-- [ ] Confirm fal token API response and WebRTC offer/answer with real pilot credentials.
-- [ ] Test desktop Chrome, desktop Safari, iOS Safari, Android Chrome.
-- [ ] Test no camera, denied permission, invalid/small portrait, disconnected network, slow ICE negotiation, failed token mint, tab close during connection and after session starts.
-- [ ] Verify server denies anonymous, unlisted and feature-disabled users.
-- [ ] Verify stop, prepaid expiry, renewal at ~22 seconds, insufficient credits, duplicate renewal idempotency, stale token refresh, navigation and tab hide stop provider usage according to fal billing records.
-- [ ] Inspect actual downloaded recording formats and playback.
-- [ ] Before a public release, implement provider-side termination, distributed concurrency control and upstream usage reconciliation; add approved SEO content, canonical/hreflang/sitemap and page discovery.
+- [ ] `pnpm build` and the project unit tests pass for this branch. Existing unrelated i18n/redirect failures should be tracked separately, not silently patched here.
+- [ ] Rendered customer UI contains no `Lucy`, `fal`, `Decart`, or other upstream model/vendor name.
+- [ ] Token API resolves `getConfig('fal_api_key')`, never a new standalone credential source.
+- [ ] Token/renew success uses `respData({ token, ...billingState })`; client tokenProvider uses `apiPost`, and errors use `respErr`/`respJson` via the shared API client.
+- [ ] Missing, malformed or foreign `Origin` receives 403 on token, renew and stop.
+- [ ] Feature flag default-off and allowlist-only gate, including rejection of unlisted admins.
+- [ ] Five new-session quota per tester per rolling 24 hours; repeat session/chunk attempts do not cause duplicate debit.
+- [ ] Test camera permissions, portrait validation, network/ICE failures, remote failure, insufficient credits, auto-renew, stop, navigation, tab hide, duplicated renewal, and clip download on real browsers.
+- [ ] Compare provider billed duration to the website credit ledger; no assertion of accurate usage settlement without real provider records.
+- [ ] Confirm upstream disconnection and session stop behavior with live test credentials, with a strict account budget; do not assume browser cleanup enforces upstream billing.
 
-No authenticated provider smoke test or local build is asserted by this implementation.
+## Rollout status
+
+Internal feature behind a disabled flag and explicit allowlist. No production key changes, account funding, public traffic or provider smoke test is authorized by this PR. SEO, full localization, provider-enforceable leases and reliable spend reconciliation remain follow-up work.
