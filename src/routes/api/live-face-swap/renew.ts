@@ -16,14 +16,14 @@ import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { respData, respErr, respJson } from '@/lib/resp';
 
 async function POST({ request }: { request: Request }) {
+  if (!isSameOriginLiveFaceSwapRequest(request)) {
+    return respErr('Origin not allowed', { status: 403 });
+  }
   const limit = enforceMinIntervalRateLimit(request, {
     intervalMs: 500,
     keyPrefix: 'live-face-swap-renew',
   });
   if (limit) return limit;
-  if (!isSameOriginLiveFaceSwapRequest(request)) {
-    return respErr('Origin not allowed', { status: 403 });
-  }
   try {
     const session = await getAuth().api.getSession({ headers: request.headers });
     if (!session?.user) return respErr('Unauthorized', { status: 401 });
