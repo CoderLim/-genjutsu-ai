@@ -5,16 +5,25 @@ import {
   assertLiveFaceSwapSequence,
   assertLiveFaceSwapSessionId,
   LIVE_FACE_SWAP_CREDITS,
+  LIVE_FACE_SWAP_CREDITS_PER_SECOND,
   LIVE_FACE_SWAP_PROVIDER_COST_USD,
   LIVE_FACE_SWAP_SECONDS,
   LIVE_FACE_SWAP_MAX_CHUNKS,
   liveFaceSwapPaidUntil,
 } from './pricing';
 
-test('Lucy per-chunk pricing preserves the shared 1.7x margin', () => {
+test('Lucy live pricing matches 3.6 credits/second competitor benchmark', () => {
   assert.equal(LIVE_FACE_SWAP_SECONDS, 30);
+  assert.equal(LIVE_FACE_SWAP_CREDITS_PER_SECOND, 3.6);
+  assert.equal(LIVE_FACE_SWAP_CREDITS, 108);
+  assert.equal(LIVE_FACE_SWAP_CREDITS * 2, 216); // 60s, two prepaid chunks
+});
+
+test('estimated upstream costs are separately budgeted at the conservative fal rate', () => {
   assert.equal(LIVE_FACE_SWAP_PROVIDER_COST_USD, 1.2);
-  assert.equal(LIVE_FACE_SWAP_CREDITS, 204);
+  // This benchmark tariff is NOT the 1.7x generic cost-to-credits conversion.
+  // Large credit packs may have no margin at a $0.04/s provider rate.
+  assert.ok((108 * 39.99) / 3600 < LIVE_FACE_SWAP_PROVIDER_COST_USD);
 });
 
 test('billing chunk times advance without a fixed 30-second total cap', () => {
