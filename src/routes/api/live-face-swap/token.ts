@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { getAuth } from '@/core/auth';
-import { hasPermission } from '@/modules/rbac/service';
+import { getConfig } from '@/modules/config/service';
 import { getBalance } from '@/modules/credits/service';
 import {
   activateLiveFaceSwapSession,
@@ -25,7 +25,7 @@ const TOKEN_URL = 'https://rest.fal.ai/tokens/';
 
 function sameOrigin(request: Request) {
   const origin = request.headers.get('origin');
-  if (!origin) return true;
+  if (!origin) return false;
   try {
     return new URL(origin).origin === new URL(request.url).origin;
   } catch {
@@ -80,9 +80,8 @@ async function POST({ request }: { request: Request }) {
       .split(',')
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean);
-    const permitted =
-      emails.includes(session.user.email.toLowerCase()) ||
-      (await hasPermission(userId, 'admin.*'));
+    // Explicit allowlist ONLY: admins are not automatically exempt from spend controls.
+    const permitted = emails.includes(session.user.email.toLowerCase());
     if (!permitted) {
       return respErr('Live Face Swap is in limited testing', { status: 403 });
     }
@@ -93,7 +92,7 @@ async function POST({ request }: { request: Request }) {
     }
     sessionId = assertLiveFaceSwapSessionId(body.sessionId);
 
-    const apiKey = process.env.FAL_KEY?.trim();
+    const apiKey = (await getConfig('fal_api_key'))?.trim();
     if (!apiKey) return respErr('Live Face Swap is not configured', { status: 503 });
 
     const existing = await getLiveFaceSwapSession({ sessionId, userId });
@@ -113,7 +112,7 @@ async function POST({ request }: { request: Request }) {
       }
     }
 
-    // Do not expose the master FAL_KEY to browsers.
+    // Do not expose the server-configured Fal API key to browsers.
     const upstream = await fetch(TOKEN_URL, {
       method: 'POST',
       headers: {
