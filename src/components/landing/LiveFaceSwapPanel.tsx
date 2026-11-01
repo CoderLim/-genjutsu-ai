@@ -345,6 +345,7 @@ export function LiveFaceSwapPanel() {
                 typeof data?.requiredCredits === 'number' &&
                 typeof data?.balance === 'number'
               ) {
+                queryClient.setQueryData(['user-credits'], { balance: data.balance });
                 creditGate.open(data);
               }
             }
@@ -435,6 +436,7 @@ export function LiveFaceSwapPanel() {
                   ) {
                     const data = cause.data as { balance: number; requiredCredits?: number };
                     if (typeof data.requiredCredits === 'number') {
+                      queryClient.setQueryData(['user-credits'], { balance: data.balance });
                       creditGate.open({ balance: data.balance, requiredCredits: data.requiredCredits });
                       setError('Not enough credits to continue the live session.');
                       void stopLive();
