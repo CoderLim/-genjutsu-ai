@@ -10,6 +10,7 @@ import {
   LIVE_FACE_SWAP_SECONDS,
   LIVE_FACE_SWAP_MAX_CHUNKS,
   liveFaceSwapPaidUntil,
+  calculateLiveFaceSwapSettlement,
 } from './pricing';
 
 test('Lucy live pricing matches 3.6 credits/second competitor benchmark', () => {
@@ -48,5 +49,48 @@ test('renewal sequence is positive and within safety ceiling', () => {
   assert.equal(assertLiveFaceSwapSequence(119), LIVE_FACE_SWAP_MAX_CHUNKS - 1);
   for (const value of [-1, 0, 1.5, '2', LIVE_FACE_SWAP_MAX_CHUNKS, NaN]) {
     assert.throws(() => assertLiveFaceSwapSequence(value));
+  }
+});
+
+test('refunds unused prepaid credits at integer-second resolution', () => {
+  const issuedAtMs = 1_800_000_000_000;
+  const assertUsage = (milliseconds: number, reservedChunks: number, expected: {
+    billedSeconds: number; chargedCredits: number; refundedCredits: number;
+  }) => {
+    const result = calculateLiveFaceSwapSettlement({
+      issuedAtMs, endedAtMs: issuedAtMs + milliseconds, reservedChunks,
+    });
+    assert.equal(result.billedSeconds, expected.billedSeconds);
+    assert.equal(result.chargedCredits, expected.chargedCredits);
+    assert.equal(result.refundedCredits, expected.refundedCredits);
+    assert.equal(result.reservedCredits, reservedChunks * 108);
+    assert.equal(result.billingBasis, 'server-token-wallclock');
+  };
+  assertUsage(0, 1, { billedSeconds: 0, chargedCredits: 0, refundedCredits: 108 });
+  assertUsage(1, 1, { billedSeconds: 1, chargedCredits: 4, refundedCredits: 104 });
+  assertUsage(9_100, 1, { billedSeconds: 10, chargedCredits: 36, refundedCredits: 72 });
+  assertUsage(30_000, 1, { billedSeconds: 30, chargedCredits: 108, refundedCredits: 0 });
+  assertUsage(38_000, 2, { billedSeconds: 38, chargedCredits: 137, refundedCredits: 79 });
+  assertUsage(59_990, 2, { billedSeconds: 60, chargedCredits: 216, refundedCredits: 0 });
+});
+
+test('flags duration beyond prepaid credits for manual reconciliation', () => {
+  const result = calculateLiveFaceSwapSettlement({
+    issuedAtMs: 1_800_000_000_000,
+    endedAtMs: 1_800_000_050_000,
+    reservedChunks: 1,
+  });
+  assert.equal(result.refundedCredits, 0);
+  assert.equal(result.uncoveredCredits, 72);
+});
+
+test('rejects invalid or clock-reversed settlement inputs', () => {
+  for (const params of [
+    { issuedAtMs: 0, endedAtMs: 10, reservedChunks: 1 },
+    { issuedAtMs: 1000, endedAtMs: 999, reservedChunks: 1 },
+    { issuedAtMs: 1000, endedAtMs: 1000, reservedChunks: 0 },
+    { issuedAtMs: 1000, endedAtMs: 1000, reservedChunks: 121 },
+  ]) {
+    assert.throws(() => calculateLiveFaceSwapSettlement(params));
   }
 });
