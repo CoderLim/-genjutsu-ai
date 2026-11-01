@@ -160,12 +160,8 @@ export function LiveFaceSwapPanel() {
     renewingRef.current = false;
     setRenewing(false);
     if (endedSessionId) {
-      void fetch('/api/live-face-swap/stop', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        keepalive: true,
-        body: JSON.stringify({ sessionId: endedSessionId }),
+      void apiPost('/api/live-face-swap/stop', {
+        sessionId: endedSessionId,
       }).catch(() => undefined);
     }
     releaseTimers();
@@ -330,28 +326,33 @@ export function LiveFaceSwapPanel() {
         localStream: camera,
         tokenExpirationSeconds: 120,
         tokenProvider: async (app) => {
-          const response = await fetch('/api/live-face-swap/token', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ app, sessionId }),
-          });
-          const payload = await response.json().catch(() => null);
-          if (!response.ok || payload?.code !== 0) {
-            if (response.status === 402) {
-              const data = payload?.data;
+          let paid: TokenResponse;
+          try {
+            paid = await apiPost<TokenResponse>('/api/live-face-swap/token', {
+              app,
+              sessionId,
+            });
+          } catch (cause) {
+            // api-client unwraps the same { code, message, data } envelope
+            // for success and credit-insufficient error responses.
+            if (cause instanceof ApiError) {
+              const data = cause.data as
+                | { requiredCredits?: unknown; balance?: unknown }
+                | undefined;
               if (
                 operation === operationRef.current &&
                 typeof data?.requiredCredits === 'number' &&
-                typeof data?.balance === 'number'
+                typeof data.balance === 'number'
               ) {
                 queryClient.setQueryData(['user-credits'], { balance: data.balance });
-                creditGate.open(data);
+                creditGate.open({
+                  requiredCredits: data.requiredCredits,
+                  balance: data.balance,
+                });
               }
             }
-            throw new Error(payload?.message || 'Live Face Swap is not available.');
+            throw cause;
           }
-          const paid = payload.data as TokenResponse;
           if (
             !paid?.token ||
             !Number.isFinite(paid.paidUntilMs) ||
@@ -593,7 +594,7 @@ export function LiveFaceSwapPanel() {
             </div>
             <h2 className="text-lg font-semibold text-white/90">Camera &amp; consent</h2>
             <p className="mt-1 text-sm leading-6 text-white/45">
-              Your camera feed will be sent directly to the live AI provider while connected.
+              Your camera feed is processed by our live processing service while connected.
             </p>
           </div>
           <label className="flex cursor-pointer items-start gap-3 text-xs leading-5 text-white/65">
@@ -760,7 +761,7 @@ export function LiveFaceSwapPanel() {
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-white/40">
             <Play className="size-3.5" />
-            For best results, keep one person centered with clear lighting. Lucy may alter more than just the face.
+            For best results, keep one person centered with clear lighting. The live swap may alter more than just the face.
           </div>
         </div>
       </div>
