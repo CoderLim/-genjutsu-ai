@@ -49,7 +49,7 @@ type PaidState = {
 };
 type TokenResponse = PaidState & { token: string; sessionId: string };
 type SettlementResponse = {
-  status: 'settled' | 'pending';
+  status: 'settled' | 'pending' | 'not-started';
   billedSeconds: number;
   reservedCredits: number;
   chargedCredits: number;
@@ -164,13 +164,20 @@ export function LiveFaceSwapPanel() {
         const result = await apiPost<SettlementResponse>('/api/live-face-swap/stop', {
           sessionId: endedSessionId,
         });
-        setSettlement(result);
+        if (result.status !== 'not-started') {
+          setSettlement(result);
+        }
         if (result.status === 'pending') {
           setError('Your session needs a billing review. Reserved credits are held.');
         }
         void queryClient.invalidateQueries({ queryKey: ['user-credits'] });
       } catch {
-        setError('Live billing is awaiting reconciliation. Please contact support if your credits do not return.');
+        // A failed token request may never have created a billable session.
+        // Preserve the original authorization/connection error instead of
+        // replacing it with a misleading billing-only message.
+        setError((current) =>
+          current || 'Live billing is awaiting reconciliation. Please contact support if your credits do not return.'
+        );
       } finally {
         setSettling(false);
       }
@@ -334,6 +341,11 @@ export function LiveFaceSwapPanel() {
               sessionId,
             });
           } catch (cause) {
+            // Show the real token endpoint failure before async stop cleanup.
+            // Provider errors remain sanitized by the server API envelope.
+            if (operation === operationRef.current && cause instanceof ApiError) {
+              setError(cause.message);
+            }
             // api-client unwraps the same { code, message, data } envelope
             // for success and credit-insufficient error responses.
             if (cause instanceof ApiError) {
@@ -455,7 +467,7 @@ export function LiveFaceSwapPanel() {
             }, 500);
           }
           if (state === 'failed') {
-            setError('The live connection failed. Try again.');
+            setError((current) => current || 'The live connection failed. Try again.');
             void stopLive();
           } else if (state === 'closed') {
             void stopLive();
@@ -463,7 +475,7 @@ export function LiveFaceSwapPanel() {
         },
         onError: () => {
           if (operation === operationRef.current) {
-            setError('Unable to connect to the live model. Check your access and try again.');
+            setError((current) => current || 'Unable to connect to the live service. Check your access and try again.');
             void stopLive();
           }
         },
