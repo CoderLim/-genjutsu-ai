@@ -146,6 +146,7 @@ async function POST({ request }: { request: Request }) {
         sessionId,
         issuedAtMs: issuedAtMs ?? paid.issuedAtMs,
         paidUntilMs: paid.paidUntilMs,
+        sequence: paid.sequence,
         chargedCredits: paid.chargedCredits,
         creditsPerChunk: LIVE_FACE_SWAP_CREDITS,
         balance: await getBalance(userId),
