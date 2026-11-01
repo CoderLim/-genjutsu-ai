@@ -37,6 +37,18 @@ const LUCY_PROMPT =
   'Maintain the original hair, hairstyle, body, clothes, head movement, expressions, camera framing, ' +
   'lighting, and background. Keep all non-face areas unchanged. Make the replacement natural and stable.';
 
+/** Diagnostics are local-only; scrub references and credentials before logging. */
+function safeRealtimeDiagnostic(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/data:[^\s"']+/gi, '[image-data]')
+    .replace(/Bearer\s+[^\s"'<>]+/gi, 'Bearer [redacted]')
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[jwt]')
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[url]')
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
+    .slice(0, 320);
+}
+
 type Phase = 'idle' | 'camera-starting' | 'camera-ready' | 'connecting' | 'live';
 
 type PaidState = {
@@ -401,7 +413,7 @@ export function LiveFaceSwapPanel() {
           if (event.kind === 'progress') {
             console.debug('[live-face-swap] negotiation phase:', event.phase);
           } else if (event.kind === 'failure') {
-            console.warn('[live-face-swap] protocol failure:', event.message);
+            console.warn('[live-face-swap] protocol failure:', safeRealtimeDiagnostic(event.message));
           }
         },
         onState: (state) => {
@@ -490,11 +502,14 @@ export function LiveFaceSwapPanel() {
         },
         onError: (cause) => {
           if (operation === operationRef.current) {
-            // Preserve error details in the local browser console for pilot
-            // debugging, never expose upstream internals in customer copy.
-            // SDK errors can contain sensitive details: testers must redact
-            // tokens, URLs and user-specific data when sharing logs.
-            console.error('[live-face-swap] realtime SDK error:', cause);
+            // Keep enough detail to identify a negotiation failure without
+            // leaking ephemeral tokens, uploaded images or personal URLs.
+            console.error('[live-face-swap] realtime SDK error:', {
+              name: cause instanceof Error ? cause.name : typeof cause,
+              message: safeRealtimeDiagnostic(
+                cause instanceof Error ? cause.message : String(cause)
+              ),
+            });
             setError((current) => current || 'Unable to connect to the live service. Check your access and try again.');
             void stopLive();
           }
