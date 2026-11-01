@@ -20,6 +20,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Temporary public registry metadata check for lockfile verification.
+      - name: Print Lucy dependency integrity
+        run: |
+          npm view '@fal-ai/client@1.11.0-alpha.5' dist.integrity
+          npm view '@msgpack/msgpack@3.1.3' dist.integrity
+          npm view 'eventsource-parser@1.1.2' dist.integrity
+          npm view 'robot3@0.4.1' dist.integrity
+
       - name: Run unit tests
         run: pnpm test
 
