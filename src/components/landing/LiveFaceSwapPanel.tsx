@@ -33,12 +33,17 @@ import { InsufficientCreditsModal } from '@/components/credits/insufficient-cred
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const LUCY_ENDPOINT = 'decart/lucy-2-5/realtime';
+/**
+ * Face-only live swap, phrased like Seedance 2.5 REFERENCE IDENTITY /
+ * OBJECT SWAP rules in `@/modules/genjutsu/workflow` (authoritative reference,
+ * complete appearance, no blend with the camera performer). Scoped to face —
+ * body/clothes/motion stay from the live camera.
+ */
 const LUCY_PROMPT =
-  'Replace only the visible person’s face with the face from the reference image. ' +
-  'Use only this reference for identity — match its exact appearance, colors, and features. ' +
-  'Do not invent a different face or species than what is in the reference. ' +
-  'Maintain the original body, clothes, head movement, expressions, camera framing, ' +
-  'lighting, and background. Keep all non-face areas unchanged. Make the replacement natural and stable.';
+  'REFERENCE IDENTITY: Replace only the visible person’s face. Use the reference image as the authoritative face identity and appearance. ' +
+  'For person, character, or animal references, use the complete reference face appearance — facial features, colors, markings, fur or skin texture, and distinctive identity traits — not selected features and not a generic look. ' +
+  'Do not retain or blend the camera performer’s face identity with the reference. Keep the reference identity consistent across frames. ' +
+  'Preserve the original body, clothes, head movement, expressions, camera framing, lighting, and background. Keep all non-face areas unchanged.';
 
 /**
  * Same-origin gallery assets (also mirrored on R2 under
