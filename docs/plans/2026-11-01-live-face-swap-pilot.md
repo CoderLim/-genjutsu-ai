@@ -52,6 +52,24 @@
 - [ ] Compare fal invoice duration to server token-to-stop estimate and credit ledger; **do not assume they match** without signed upstream session usage data.
 - [ ] Confirm upstream disconnection and session stop behavior with live test credentials, with a strict account budget; do not assume browser cleanup enforces upstream billing.
 
+## Live session history in My Creations
+
+- Every successful `/token` reservation writes one **root** `ai_task` with `scene = live-face-swap` and `options.kind = live-session`. Subsequent `/renew` reservations are subordinate `live-topup` rows and must never become separate My Creations cards.
+- `/api/user/generations` includes only the authenticated user's root Live sessions, alongside existing generation scenes, using the same pagination and chronological ordering. No database migration or new media storage is required.
+- The user-visible Live history contains creation time, end time when available, server-estimated billed duration, finalized net credit charge, returned credits, and a conservative state. An `active` DB row is displayed as **unverified**, not evidence that an upstream WebRTC stream is still live; ambiguous `charging`, `refunding`, and `settling` states are flagged for billing review.
+- **Privacy**: live history excludes any camera frames, reference photos, prompts, WebRTC metadata, provider auth tokens, and playable/downloadable media URLs. Video recording remains disabled. A blank placeholder explicitly states that no clip was saved.
+- If a session never reached `/token` (e.g. local camera permission denial), no server record exists. If a root reservation was attempted, its initial status can be shown even if the token fails. This is intentional; a camera preview alone is not an authenticated Live session.
+- Live cards use a dedicated refresh of the user-history list, **not** the Genjutsu video-generation status endpoint. No separate permissionless details API is added.
+
+### History acceptance checks
+
+- [ ] User A sees only User A's Live roots, not User B's sessions.
+- [ ] A 60-second session with two credit reservations appears as **one** history item.
+- [ ] Ended session shows net credits after refund and token-to-stop duration, not the initial hold.
+- [ ] Incomplete session shows a conservative status rather than a false completed result or a perpetual processing spinner.
+- [ ] No camera/reference imagery or video links leak into user history JSON or cards.
+- [ ] Existing My Creations pagination, other video cards, and status polling continue to work.
+
 ## Rollout status
 
 Internal feature behind a disabled flag and explicit allowlist. No production key changes, account funding, public traffic or provider smoke test is authorized by this PR. SEO, full localization, provider-enforceable leases and reliable spend reconciliation remain follow-up work.
