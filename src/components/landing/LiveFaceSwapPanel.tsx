@@ -109,6 +109,16 @@ type LiveHandle = {
   ready: Promise<unknown>;
 };
 
+/** Visual-only clock, independent of server-side credit settlement. */
+function formatLiveDuration(seconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const remainder = safeSeconds % 60;
+  const mmss = `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+  return hours > 0 ? `${hours}:${mmss}` : mmss;
+}
+
 const buttonPrimary =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#f0b06b,#d77b42)] px-5 py-2.5 text-sm font-semibold text-[#24170f] shadow-[0_8px_20px_rgba(215,123,66,0.12)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40';
 const buttonSecondary =
@@ -180,6 +190,7 @@ export function LiveFaceSwapPanel() {
   const photoSelectionRef = useRef(0);
   const operationRef = useRef(0);
   const paidRef = useRef<PaidState | null>(null);
+  const liveStartedAtRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const renewingRef = useRef(false);
   const cameraAttemptRef = useRef(0);
@@ -206,6 +217,7 @@ export function LiveFaceSwapPanel() {
     }
     setHasRemoteVideo(false);
     setElapsed(0);
+    liveStartedAtRef.current = null;
     paidRef.current = null;
     setBilling(null);
     setPhase(cameraRef.current?.active ? 'camera-ready' : 'idle');
@@ -418,6 +430,7 @@ export function LiveFaceSwapPanel() {
     setHasRemoteVideo(false);
     setBilling(null);
     setSettlement(null);
+    liveStartedAtRef.current = null;
     paidRef.current = null;
     const sessionId = crypto.randomUUID();
     sessionIdRef.current = sessionId;
@@ -499,6 +512,15 @@ export function LiveFaceSwapPanel() {
         },
         onMedia: (remoteStream) => {
           if (operation !== operationRef.current) return;
+          // Visual timer starts at first received AI video track, not token
+          // issuance. Repeated media callbacks and renewals cannot reset it.
+          if (
+            liveStartedAtRef.current === null &&
+            remoteStream.getVideoTracks().length > 0
+          ) {
+            liveStartedAtRef.current = Date.now();
+            setElapsed(0);
+          }
           outputRef.current = remoteStream;
           if (outputVideoRef.current) {
             outputVideoRef.current.srcObject = remoteStream;
@@ -533,9 +555,10 @@ export function LiveFaceSwapPanel() {
               setClockMs(now);
               const paid = paidRef.current;
               if (!paid) return;
-              setElapsed(
-                Math.max(0, Math.floor((now - paid.issuedAtMs) / 1000))
-              );
+              const liveStartedAt = liveStartedAtRef.current;
+              if (liveStartedAt !== null) {
+                setElapsed(Math.max(0, Math.floor((now - liveStartedAt) / 1000)));
+              }
               if (now >= paid.paidUntilMs) {
                 setError(
                   'Your prepaid live time has ended. Start a new session to continue.'
@@ -674,7 +697,9 @@ export function LiveFaceSwapPanel() {
     phase === 'connecting'
       ? 'Connecting'
       : phase === 'live'
-        ? `Live · ${secondsLeft}s`
+        ? hasRemoteVideo
+          ? `Live · ${formatLiveDuration(elapsed)}`
+          : 'Live · Waiting for AI output'
         : settling
           ? 'Settling'
           : phase === 'camera-ready'
@@ -889,7 +914,7 @@ export function LiveFaceSwapPanel() {
                   <span>{billing.chargedCredits} credits</span>
                 </div>
                 <div className="mt-1 flex justify-between gap-2">
-                  <span>Time left</span>
+                  <span>Prepaid time left</span>
                   <span>
                     {secondsLeft}s{renewing ? ' · Renewing…' : ''}
                   </span>
@@ -1008,7 +1033,7 @@ export function LiveFaceSwapPanel() {
                           ? 'Choose a reference face to continue.'
                           : !consent
                             ? 'Confirm consent before starting.'
-                            : `Credit usage starts when AI output appears · ${LIVE_FACE_SWAP_CREDITS} credits / ${LIVE_FACE_SWAP_SECONDS}s`}
+                            : `Credits are reserved when starting · ${LIVE_FACE_SWAP_CREDITS} credits / ${LIVE_FACE_SWAP_SECONDS}s`}
                     </p>
                   </>
                 )}
