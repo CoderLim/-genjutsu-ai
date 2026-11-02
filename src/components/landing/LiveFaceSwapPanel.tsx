@@ -33,15 +33,8 @@ import { InsufficientCreditsModal } from '@/components/credits/insufficient-cred
 
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const LUCY_ENDPOINT = 'decart/lucy-2-5/realtime';
-/**
- * Face-only live swap, phrased like Seedance 2.5 REFERENCE IDENTITY /
- * OBJECT SWAP rules in `@/modules/genjutsu/workflow` (authoritative reference,
- * complete appearance, no blend with the camera performer). Scoped to face —
- * body/clothes/motion stay from the live camera.
- */
 // Keep close to Decart's character-swap wording. Long "animal/fur/markings"
-// identity essays biased Lucy toward cat-like faces even when the reference
-// was a human portrait (Trump URL attached correctly; output still looked feline).
+// identity essays biased Lucy toward cat-like faces even with a human reference.
 const LUCY_PROMPT =
   'Substitute the character in the video with the person or character shown in the reference image. ' +
   'Match the reference face identity exactly — do not blend with the camera performer and do not invent unrelated animal features. ' +
