@@ -34,8 +34,9 @@ import { InsufficientCreditsModal } from '@/components/credits/insufficient-cred
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const LUCY_ENDPOINT = 'decart/lucy-2-5/realtime';
 const LUCY_PROMPT =
-  'Replace only the visible person’s face with the face of the character in the reference image. ' +
-  'Match the reference character’s face identity closely — human, animal, stylized, or non-human. ' +
+  'Replace only the visible person’s face with the face from the reference image. ' +
+  'Use only this reference for identity — match its exact appearance, colors, and features. ' +
+  'Do not invent a different face or species than what is in the reference. ' +
   'Maintain the original body, clothes, head movement, expressions, camera framing, ' +
   'lighting, and background. Keep all non-face areas unchanged. Make the replacement natural and stable.';
 
@@ -370,6 +371,9 @@ export function LiveFaceSwapPanel() {
     setGalleryId(item.id);
     setReferenceSource('gallery');
     setPhotoPreview(item.url);
+    // Clear immediately so Start cannot reuse the previous reference while the
+    // new gallery image is still loading (e.g. cat → Trump race).
+    setReferenceData(null);
     // Prefer a data URI so Lucy does not need a separate CDN fetch. Fall back
     // to an absolute same-origin URL if browser decode fails.
     try {
@@ -1101,7 +1105,9 @@ export function LiveFaceSwapPanel() {
                       {!cameraOn
                         ? 'Open your camera, pick a reference, then start.'
                         : !referenceData
-                          ? 'Choose a reference face to continue.'
+                          ? galleryId
+                            ? 'Loading reference…'
+                            : 'Choose a reference face to continue.'
                           : !consent
                             ? 'Confirm consent before starting.'
                             : `${LIVE_FACE_SWAP_CREDITS_PER_SECOND} credits/s · usage includes connection setup`}
