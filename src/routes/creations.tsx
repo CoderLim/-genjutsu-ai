@@ -220,6 +220,12 @@ function LiveSessionCard({
           <div className="text-muted-foreground space-y-1 text-xs">
             {state === 'completed' && history ? (
               <>
+                {history.endedAtMs !== null ? (
+                  <div className="flex justify-between gap-3">
+                    <span>{m['creations.live_ended_at']()}</span>
+                    <span>{formatDateTime(new Date(history.endedAtMs).toISOString())}</span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-3">
                   <span>{m['creations.live_duration']()}</span>
                   <span className="tabular-nums">{history.billedSeconds}s</span>
