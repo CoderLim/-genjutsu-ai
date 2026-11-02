@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNull, like, or } from 'drizzle-orm';
 
 import { getAuth } from '@/core/auth';
 import { db } from '@/core/db';
@@ -9,6 +9,8 @@ import {
   LISTABLE_GENERATION_SCENES,
 } from '@/modules/generations/scenes';
 import { HOTEL_LOBBY_SCENE } from '@/modules/hotel-lobby/billing';
+import { getLiveSessionHistory } from '@/modules/live-face-swap/history';
+import { LIVE_FACE_SWAP_SCENE } from '@/modules/live-face-swap/pricing';
 import { displayNameForHotelLobbyPresetId } from '@/modules/hotel-lobby/presets';
 import { respErr, respPage } from '@/lib/resp';
 
@@ -39,9 +41,17 @@ async function GET({ request }: { request: Request }) {
     const offset = (page - 1) * pageSize;
 
     const where = and(
-      inArray(aiTask.scene, [...LISTABLE_GENERATION_SCENES]),
       eq(aiTask.userId, session.user.id),
-      isNull(aiTask.deletedAt)
+      isNull(aiTask.deletedAt),
+      or(
+        inArray(aiTask.scene, [...LISTABLE_GENERATION_SCENES]),
+        // ONE creation per Live session, never one per 30s billing chunk.
+        // New root records persist this exact marker in JSON options.
+        and(
+          eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
+          like(aiTask.options, '%"kind":"live-session"%')
+        )
+      )
     );
 
     const [totalResult] = await db()
@@ -59,6 +69,8 @@ async function GET({ request }: { request: Request }) {
         costCredits: aiTask.costCredits,
         createdAt: aiTask.createdAt,
         updatedAt: aiTask.updatedAt,
+        taskInfo: aiTask.taskInfo,
+        taskResult: aiTask.taskResult,
       })
       .from(aiTask)
       .where(where)
@@ -67,6 +79,31 @@ async function GET({ request }: { request: Request }) {
       .offset(offset);
 
     const items = rows.map((row) => {
+      if (row.scene === LIVE_FACE_SWAP_SCENE) {
+        const liveSession = getLiveSessionHistory({
+          status: row.status,
+          taskInfo: row.taskInfo,
+          taskResult: row.taskResult,
+        });
+        // Never expose video URLs, source faces, private taskInfo, provider
+        // metadata or session tokens. Live sessions are NOT saved recordings.
+        return {
+          id: row.id,
+          scene: LIVE_FACE_SWAP_SCENE,
+          prompt: '',
+          status: row.status,
+          mode: null,
+          resolution: null,
+          aspectRatio: null,
+          duration: liveSession.billedSeconds,
+          costCredits: liveSession.finalCredits ?? 0,
+          sourceVideoUrl: null,
+          videoUrl: null,
+          liveSession,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+        };
+      }
       const options = parseJson(row.options);
       const hasSourceVideo =
         typeof options?.videoKey === 'string' && options.videoKey.length > 0;
