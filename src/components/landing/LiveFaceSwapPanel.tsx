@@ -38,33 +38,45 @@ const LUCY_PROMPT =
   'Maintain the original hair, hairstyle, body, clothes, head movement, expressions, camera framing, ' +
   'lighting, and background. Keep all non-face areas unchanged. Make the replacement natural and stable.';
 
+/** First-party R2 portraits (≥512px). Do not point at third-party gallery CDNs. */
+const GALLERY_PUBLIC_BASE =
+  'https://pub-fea47c6abb5a46ff9f33ce34b71ee2dd.r2.dev/uploads/live-face-swap/gallery';
+
 const REFERENCE_GALLERY = [
   {
     id: 'face-animal-cat-01',
     label: 'Cat',
-    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/face-animal-cat-01.webp',
+    url: `${GALLERY_PUBLIC_BASE}/face-animal-cat-01.webp`,
   },
   {
     id: 'custom-character-033',
     label: 'Character 33',
-    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/custom-character-033.webp',
+    url: `${GALLERY_PUBLIC_BASE}/custom-character-033.webp`,
   },
   {
     id: 'custom-character-020',
     label: 'Character 20',
-    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/custom-character-020.webp',
+    url: `${GALLERY_PUBLIC_BASE}/custom-character-020.webp`,
   },
   {
     id: 'custom-character-018',
     label: 'Character 18',
-    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/custom-character-018.webp',
+    url: `${GALLERY_PUBLIC_BASE}/custom-character-018.webp`,
   },
   {
     id: 'custom-character-075',
     label: 'Character 75',
-    url: 'https://r2.livefaceswap.ai/reference-gallery/v1/gallery-portrait-thumbnails/custom-character-075.webp',
+    url: `${GALLERY_PUBLIC_BASE}/custom-character-075.webp`,
   },
 ] as const;
+
+type Phase =
+  | 'idle'
+  | 'camera-starting'
+  | 'camera-ready'
+  | 'connecting'
+  | 'live';
+type ReferenceSource = 'upload' | 'gallery' | null;
 
 /** Diagnostics are local-only; scrub references and credentials before logging. */
 function safeRealtimeDiagnostic(value: unknown): string {
@@ -77,14 +89,6 @@ function safeRealtimeDiagnostic(value: unknown): string {
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
     .slice(0, 320);
 }
-
-type Phase =
-  | 'idle'
-  | 'camera-starting'
-  | 'camera-ready'
-  | 'connecting'
-  | 'live';
-type ReferenceSource = 'upload' | 'gallery' | null;
 
 type PaidState = {
   issuedAtMs: number;
@@ -339,16 +343,39 @@ export function LiveFaceSwapPanel() {
     setGalleryId(null);
   }
 
-  function selectGalleryReference(item: (typeof REFERENCE_GALLERY)[number]) {
+  async function selectGalleryReference(
+    item: (typeof REFERENCE_GALLERY)[number]
+  ) {
     if (phase === 'connecting' || phase === 'live') return;
     setError('');
-    photoSelectionRef.current += 1;
+    const selection = ++photoSelectionRef.current;
     if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current);
     photoUrlRef.current = null;
     setGalleryId(item.id);
     setReferenceSource('gallery');
     setPhotoPreview(item.url);
-    setReferenceData(item.url);
+    // Fal needs a reachable ≥512px image (data URI or public URL). Load into a
+    // data URI so the session does not depend on fal fetching the CDN at start.
+    try {
+      const response = await fetch(item.url);
+      if (!response.ok) throw new Error('Gallery image unavailable');
+      const blob = await response.blob();
+      const file = new File([blob], `${item.id}.webp`, {
+        type: blob.type || 'image/webp',
+      });
+      const photo = await readPhoto(file);
+      if (selection !== photoSelectionRef.current) return;
+      if (photo.width < 512 || photo.height < 512) {
+        setReferenceData(null);
+        setError('Gallery reference must be at least 512 × 512 pixels.');
+        return;
+      }
+      setReferenceData(photo.data);
+    } catch {
+      if (selection !== photoSelectionRef.current) return;
+      setReferenceData(null);
+      setError('Could not load the gallery reference. Try again or upload.');
+    }
   }
 
   async function pickPhoto(event: ChangeEvent<HTMLInputElement>) {
@@ -849,7 +876,7 @@ export function LiveFaceSwapPanel() {
                     disabled={active || settling}
                     title={item.label}
                     aria-pressed={selected}
-                    onClick={() => selectGalleryReference(item)}
+                    onClick={() => void selectGalleryReference(item)}
                     className={cn(
                       'relative aspect-square overflow-hidden rounded-xl border transition',
                       selected
