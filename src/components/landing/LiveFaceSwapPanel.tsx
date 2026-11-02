@@ -39,48 +39,57 @@ const LUCY_ENDPOINT = 'decart/lucy-2-5/realtime';
  * complete appearance, no blend with the camera performer). Scoped to face —
  * body/clothes/motion stay from the live camera.
  */
+// Keep close to Decart's character-swap wording. Long "animal/fur/markings"
+// identity essays biased Lucy toward cat-like faces even when the reference
+// was a human portrait (Trump URL attached correctly; output still looked feline).
 const LUCY_PROMPT =
-  'REFERENCE IDENTITY: Replace only the visible person’s face. Use the reference image as the authoritative face identity and appearance. ' +
-  'For person, character, or animal references, use the complete reference face appearance — facial features, colors, markings, fur or skin texture, and distinctive identity traits — not selected features and not a generic look. ' +
-  'Do not retain or blend the camera performer’s face identity with the reference. Keep the reference identity consistent across frames. ' +
-  'Preserve the original body, clothes, head movement, expressions, camera framing, lighting, and background. Keep all non-face areas unchanged.';
+  'Substitute the character in the video with the person or character shown in the reference image. ' +
+  'Match the reference face identity exactly — do not blend with the camera performer and do not invent unrelated animal features. ' +
+  'Keep the original body, clothes, head movement, expressions, camera framing, lighting, and background unchanged.';
 
 /**
- * Same-origin gallery assets (also mirrored on R2 under
- * uploads/live-face-swap/gallery/). Relative paths avoid cross-origin fetch
- * failures when converting presets to data URIs in the browser.
+ * UI preview uses same-origin static files. Lucy `reference_image_url` must be a
+ * publicly reachable HTTPS URL (fal fetches it server-side) — never localhost.
+ * R2 public copies are the authoritative remote payload.
  */
-const GALLERY_PUBLIC_BASE = '/live-face-swap/gallery';
+const GALLERY_PREVIEW_BASE = '/live-face-swap/gallery';
+const GALLERY_REMOTE_BASE =
+  'https://pub-fea47c6abb5a46ff9f33ce34b71ee2dd.r2.dev/uploads/live-face-swap/gallery';
 
 const REFERENCE_GALLERY = [
   {
     id: 'face-animal-cat-01',
     label: 'Cat',
-    url: `${GALLERY_PUBLIC_BASE}/face-animal-cat-01.webp`,
+    previewUrl: `${GALLERY_PREVIEW_BASE}/face-animal-cat-01.webp`,
+    remoteUrl: `${GALLERY_REMOTE_BASE}/face-animal-cat-01.webp`,
   },
   {
     id: 'custom-character-033',
     label: 'Character 33',
-    url: `${GALLERY_PUBLIC_BASE}/custom-character-033.webp`,
+    previewUrl: `${GALLERY_PREVIEW_BASE}/custom-character-033.webp`,
+    remoteUrl: `${GALLERY_REMOTE_BASE}/custom-character-033.webp`,
   },
   {
     id: 'custom-character-020',
     label: 'Character 20',
-    url: `${GALLERY_PUBLIC_BASE}/custom-character-020.webp`,
+    previewUrl: `${GALLERY_PREVIEW_BASE}/custom-character-020.webp`,
+    remoteUrl: `${GALLERY_REMOTE_BASE}/custom-character-020.webp`,
   },
   {
     id: 'custom-character-018',
     label: 'Character 18',
-    url: `${GALLERY_PUBLIC_BASE}/custom-character-018.webp`,
+    previewUrl: `${GALLERY_PREVIEW_BASE}/custom-character-018.webp`,
+    remoteUrl: `${GALLERY_REMOTE_BASE}/custom-character-018.webp`,
   },
   {
     id: 'custom-character-075',
     label: 'Character 75',
-    url: `${GALLERY_PUBLIC_BASE}/custom-character-075.webp`,
+    previewUrl: `${GALLERY_PREVIEW_BASE}/custom-character-075.webp`,
+    remoteUrl: `${GALLERY_REMOTE_BASE}/custom-character-075.webp`,
   },
 ] as const;
 
-function absoluteGalleryUrl(pathOrUrl: string): string {
+function absoluteReferenceUrl(pathOrUrl: string): string {
   if (
     pathOrUrl.startsWith('data:') ||
     pathOrUrl.startsWith('blob:') ||
@@ -365,42 +374,18 @@ export function LiveFaceSwapPanel() {
     setGalleryId(null);
   }
 
-  async function selectGalleryReference(
-    item: (typeof REFERENCE_GALLERY)[number]
-  ) {
+  function selectGalleryReference(item: (typeof REFERENCE_GALLERY)[number]) {
     if (phase === 'connecting' || phase === 'live') return;
     setError('');
-    const selection = ++photoSelectionRef.current;
+    photoSelectionRef.current += 1;
     if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current);
     photoUrlRef.current = null;
+    // Preview = same-origin. Payload for Lucy = R2 HTTPS (fal cannot fetch
+    // localhost; async data-URI also raced and could keep a prior cat).
     setGalleryId(item.id);
     setReferenceSource('gallery');
-    setPhotoPreview(item.url);
-    // Clear immediately so Start cannot reuse the previous reference while the
-    // new gallery image is still loading (e.g. cat → Trump race).
-    setReferenceData(null);
-    // Prefer a data URI so Lucy does not need a separate CDN fetch. Fall back
-    // to an absolute same-origin URL if browser decode fails.
-    try {
-      const response = await fetch(item.url);
-      if (!response.ok) throw new Error('Gallery image unavailable');
-      const blob = await response.blob();
-      const file = new File([blob], `${item.id}.webp`, {
-        type: blob.type || 'image/webp',
-      });
-      const photo = await readPhoto(file);
-      if (selection !== photoSelectionRef.current) return;
-      if (photo.width < 512 || photo.height < 512) {
-        setReferenceData(null);
-        setError('Gallery reference must be at least 512 × 512 pixels.');
-        return;
-      }
-      setReferenceData(photo.data);
-    } catch {
-      if (selection !== photoSelectionRef.current) return;
-      setReferenceData(absoluteGalleryUrl(item.url));
-      setError('');
-    }
+    setPhotoPreview(item.previewUrl);
+    setReferenceData(item.remoteUrl);
   }
 
   async function pickPhoto(event: ChangeEvent<HTMLInputElement>) {
@@ -481,12 +466,24 @@ export function LiveFaceSwapPanel() {
     }
   }
 
+  function resolveLiveReferenceUrl(): string | null {
+    // Gallery selection is authoritative: always derive from galleryId so a
+    // previous upload/data-URI cannot win after the UI moved to another preset.
+    if (referenceSource === 'gallery' && galleryId) {
+      const item = REFERENCE_GALLERY.find((entry) => entry.id === galleryId);
+      if (item) return item.remoteUrl;
+    }
+    if (referenceData) return absoluteReferenceUrl(referenceData);
+    return null;
+  }
+
   async function startLive() {
     const camera = cameraRef.current;
+    const referenceImageUrl = resolveLiveReferenceUrl();
     if (
       !camera ||
       !camera.active ||
-      !referenceData ||
+      !referenceImageUrl ||
       !consent ||
       settling ||
       phase !== 'camera-ready'
@@ -527,8 +524,9 @@ export function LiveFaceSwapPanel() {
         endpointId: LUCY_ENDPOINT,
         input: {
           prompt: LUCY_PROMPT,
-          reference_image_url: absoluteGalleryUrl(referenceData),
-          enable_prompt_expansion: false,
+          reference_image_url: referenceImageUrl,
+          // Decart default; their character-swap examples run with enhance on.
+          enable_prompt_expansion: true,
         },
         localStream: camera,
         tokenExpirationSeconds: 120,
@@ -911,7 +909,7 @@ export function LiveFaceSwapPanel() {
                     )}
                   >
                     <img
-                      src={item.url}
+                      src={item.previewUrl}
                       alt={item.label}
                       className="h-full w-full object-cover"
                       loading="lazy"
