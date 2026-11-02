@@ -1,16 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { getAuth } from '@/core/auth';
-import { isSameOriginLiveFaceSwapRequest } from '@/modules/live-face-swap/origin';
 import { getBalance } from '@/modules/credits/service';
 import {
   LiveFaceSwapInsufficientCreditsError,
   LiveFaceSwapSessionConflictError,
   renewLiveFaceSwapSession,
 } from '@/modules/live-face-swap/billing';
+import { isSameOriginLiveFaceSwapRequest } from '@/modules/live-face-swap/origin';
 import {
-  assertLiveFaceSwapSessionId,
   assertLiveFaceSwapSequence,
+  assertLiveFaceSwapSessionId,
 } from '@/modules/live-face-swap/pricing';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { respData, respErr, respJson } from '@/lib/resp';
@@ -25,11 +25,10 @@ async function POST({ request }: { request: Request }) {
   });
   if (limit) return limit;
   try {
-    const session = await getAuth().api.getSession({ headers: request.headers });
+    const session = await getAuth().api.getSession({
+      headers: request.headers,
+    });
     if (!session?.user) return respErr('Unauthorized', { status: 401 });
-    if (process.env.LIVE_FACE_SWAP_ENABLED !== 'true') {
-      return respErr('Live Face Swap disabled', { status: 503 });
-    }
 
     const body = await request.json().catch(() => ({}));
     const sessionId = assertLiveFaceSwapSessionId(body.sessionId);
@@ -40,10 +39,13 @@ async function POST({ request }: { request: Request }) {
       userId: session.user.id,
       userEmail: session.user.email,
     });
-    return respData({
-      ...result,
-      balance: await getBalance(session.user.id),
-    }, { headers: { 'Cache-Control': 'no-store, private' } });
+    return respData(
+      {
+        ...result,
+        balance: await getBalance(session.user.id),
+      },
+      { headers: { 'Cache-Control': 'no-store, private' } }
+    );
   } catch (error) {
     if (error instanceof LiveFaceSwapInsufficientCreditsError) {
       return respJson(

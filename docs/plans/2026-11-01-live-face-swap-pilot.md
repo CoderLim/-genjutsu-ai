@@ -7,12 +7,12 @@
 - fal model: `decart/lucy-2-5/realtime`. This is generative character editing; hair, face identity or scene preservation is not guaranteed.
 - API routes: `/api/live-face-swap/token`, `/renew`, `/stop`. Each requires an authenticated, same-origin POST (requests with missing or invalid `Origin` are rejected with 403).
 - The token endpoint resolves the **existing site Fal key** using `(await getConfig('fal_api_key'))?.trim()`. Set it through **Admin → Settings → AI → Fal**; the global config layer also supports the existing `FAL_KEY` environment fallback. Never pass the master key to the browser.
-- The token endpoint requires `LIVE_FACE_SWAP_ENABLED === 'true'` AND a matching email in `LIVE_FACE_SWAP_ALLOWED_EMAILS`. **Admin roles do not bypass the allowlist.**
-- Only English customer copy is currently implemented. This is an **English-only internal pilot**: follow-up i18n work must extract `site.live_face_swap.*` and translate all enabled locales before any public/localized launch.
+- Token/renew no longer require `LIVE_FACE_SWAP_ENABLED` or `LIVE_FACE_SWAP_ALLOWED_EMAILS` (removed 2026-11-02). Auth, same-origin, credits, and Fal key remain required.
+- Only English customer copy is currently implemented on the generator chrome; SEO/history strings may exist in other locales. Follow-up i18n should extract remaining `site.live_face_swap.*` keys.
 
-## Non-negotiable cost / rollout boundary
+## Cost / rollout boundary
 
-**Keep `LIVE_FACE_SWAP_ENABLED=false` in production and in the committed `.env.example`. Do not make this pilot public, even for paid users, until a server-enforceable media/session lifetime and provider usage reconciliation are available.**
+**Public access is on for signed-in users with credits.** Remaining risk: no server-enforceable WebRTC lease / provider usage reconciliation — monitor fal spend and credit margin closely.
 
 - Provider list price used for budgeting: **$0.04 per processed second**, equivalent to **$1.20 for 30s**, **$2.40 per minute**, **$144 per continuous hour** (pricing can change; verify the provider account). This is actual upstream spending exposure, regardless of customer wallet state.
 - The customer-facing benchmark is **3.6 credits/second**, matching the Lucy 2.5 row at https://livefaceswap.ai/pricing (checked 2026-11-01). The server **reserves 108 credits per 30s** and auto-renews before expiration. When the browser closes WebRTC and calls `/stop`, the server computes **ceil(seconds from token issuance to stop receipt) × 3.6**, rounded up to a whole credit for the _entire session_. It issues a single deterministic unused-credit refund GRANT and reports the net charge. Example: 10s uses 36 credits, returns 72; 38s reserves 216, charges 137, returns 79. This is **NOT** verified fal billed output duration or the competitor's 0.1s precision.
@@ -25,17 +25,16 @@
 - Refund GRANTs are new active credits (not restoration of individual original expiring credit lots). This difference must be reconciled with original expiry semantics before public launch.
 - A forged early `/stop` can seek unused-credit refunds without actually tearing down an upstream peer-to-peer stream; this is a known abuse path. Before public rollout require server-controlled disconnect and invoice-level validation. Client timers and same-origin requests are not a security boundary against an authenticated malicious user.
 - The **browser's 30s prepaid timer**, **JWT expiration of 120 seconds**, the **per-session 120-chunk billing ceiling** and the **5 new sessions per user in a rolling 24h pilot quota** are **not hard provider cost caps**. Neither JWT expiry nor ending the task record can revoke an already established WebRTC stream. The 5-session check is DB-based but is not a distributed lock.
-- The feature flag and explicit allowlist are the only deployment controls in this PR. Token replay and unlimited established WebRTC duration are unresolved. Do **not** switch on the flag for public traffic.
+- Token replay and unlimited established WebRTC duration remain unresolved; auth + credits + same-origin are the deployment controls after the flag/allowlist removal. Monitor fal spend under public traffic.
 - Full initial reservation is refunded when token minting fails before issuance. After issuance, unused portions are conditionally refunded on a successful server stop (not from a client-declared elapsed duration). D1's compatibility layer is non-atomic; `charging`, `refunding` and `settling` states require manual recovery/audit if interrupted.
 - The process-local rate limiter is not cross-Worker protection. Before a public launch implement a server-enforced lease or controllable media relay, distributed one-active-session limits, safe token consumption/replay protection and provider billing reconciliation.
 
-## Local / staging-only opt-in verification
+## Local verification
 
 1. `pnpm install --frozen-lockfile`, `pnpm test`, `pnpm build`.
 2. Configure the existing Fal key via **Admin → Settings → AI → Fal** (or existing environment fallback).
-3. Set `LIVE_FACE_SWAP_ENABLED=true` **only in an isolated, budgeted development/staging environment**; set `LIVE_FACE_SWAP_ALLOWED_EMAILS=your-tester@example.com`. **Never enable this flag in production.**
-4. Sign in _as an explicitly listed tester_. An admin not in the allowlist should receive 403.
-5. Visit `/live-face-swap` on localhost or HTTPS, upload an authorized portrait, consent, start the live preview, and stop.
+3. Sign in with a credited account.
+4. Visit `/live-face-swap` on localhost or HTTPS, upload an authorized portrait, consent, start the live preview, and stop.
 
 ### Acceptance checklist
 
@@ -44,8 +43,8 @@
 - [ ] Token API resolves `getConfig('fal_api_key')`, never a new standalone credential source.
 - [ ] Token/renew success uses `respData({ token, ...billingState })`; client tokenProvider uses `apiPost`, and errors use `respErr`/`respJson` via the shared API client.
 - [ ] Missing, malformed or foreign `Origin` receives 403 on token, renew and stop.
-- [ ] Feature flag default-off and allowlist-only gate, including rejection of unlisted admins.
-- [ ] Five new-session quota per tester per rolling 24 hours; repeat session/chunk attempts do not cause duplicate debit.
+- [ ] Unauthenticated requests receive 401; missing/foreign Origin receives 403.
+- [ ] Five new-session quota per user per rolling 24 hours; repeat session/chunk attempts do not cause duplicate debit.
 - [ ] Test camera permissions, portrait validation, network/ICE failures, remote failure, insufficient credits, auto-renew, stop, navigation, tab hide, duplicated renewal, and continuous preview beyond 30 seconds on real browsers.
 - [ ] On connection failure, inspect the browser's `[live-face-swap] negotiation phase`, `protocol failure`, and `realtime SDK error` console entries. The SDK delivers a terminal error through both `onState('failed')` and `onError`; do not clear the active operation before `onError` reports the cause. Share only redacted diagnostics. Verify `onMedia`/first playable output occurred before evaluating whether startup should count as chargeable usage.
 - [ ] Verify 3.6 credits/s equivalent and **108-credit hold** per 30s; test 10s → 36 used/72 returned, 30s → 108/0, 38s → 137 used/79 returned. Test repeated stop, overlapping stop/renew, renewal charge uncertainty, and pagehide no-stop/manual reconciliation. No changes to other generators' tariffs.
@@ -72,4 +71,4 @@
 
 ## Rollout status
 
-Internal feature behind a disabled flag and explicit allowlist. No production key changes, account funding, public traffic or provider smoke test is authorized by this PR. SEO, full localization, provider-enforceable leases and reliable spend reconciliation remain follow-up work.
+Public for authenticated users (flag/allowlist removed 2026-11-02). SEO is live; provider-enforceable leases and invoice-level spend reconciliation remain follow-up.

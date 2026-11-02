@@ -12,6 +12,8 @@ import {
   Check,
   CircleAlert,
   Loader2,
+  Maximize2,
+  Minimize2,
   Square,
   Upload,
   WandSparkles,
@@ -174,9 +176,11 @@ export function LiveFaceSwapPanel() {
   const [settlement, setSettlement] = useState<SettlementResponse | null>(null);
   const [settling, setSettling] = useState(false);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const outputVideoRef = useRef<HTMLVideoElement>(null);
+  const outputStageRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<MediaStream | null>(null);
   const outputRef = useRef<MediaStream | null>(null);
@@ -195,6 +199,33 @@ export function LiveFaceSwapPanel() {
   const releaseTimers = useCallback(() => {
     if (durationTimerRef.current) clearInterval(durationTimerRef.current);
     durationTimerRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    const syncFullscreen = () => {
+      const stage = outputStageRef.current;
+      setIsFullscreen(Boolean(stage && document.fullscreenElement === stage));
+    };
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    return () =>
+      document.removeEventListener('fullscreenchange', syncFullscreen);
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    const stage = outputStageRef.current;
+    if (!stage) return;
+    try {
+      if (document.fullscreenElement === stage) {
+        await document.exitFullscreen();
+        return;
+      }
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+      await stage.requestFullscreen();
+    } catch {
+      setError((current) => current || 'Fullscreen is not available here.');
+    }
   }, []);
 
   const stopLive = useCallback(async () => {
@@ -553,7 +584,9 @@ export function LiveFaceSwapPanel() {
               if (!paid) return;
               const liveStartedAt = liveStartedAtRef.current;
               if (liveStartedAt !== null) {
-                setElapsed(Math.max(0, Math.floor((now - liveStartedAt) / 1000)));
+                setElapsed(
+                  Math.max(0, Math.floor((now - liveStartedAt) / 1000))
+                );
               }
               if (now >= paid.paidUntilMs) {
                 setError(
@@ -686,8 +719,8 @@ export function LiveFaceSwapPanel() {
   // estimate separate from the visible Live timer (which starts on video).
   const estimatedCredits = billing
     ? Math.ceil(
-        (Math.max(0, Math.ceil((clockMs - billing.issuedAtMs) / 1000)) *
-          LIVE_FACE_SWAP_CREDITS_PER_SECOND)
+        Math.max(0, Math.ceil((clockMs - billing.issuedAtMs) / 1000)) *
+          LIVE_FACE_SWAP_CREDITS_PER_SECOND
       )
     : 0;
   const cameraOn = phase !== 'idle' && phase !== 'camera-starting';
@@ -942,29 +975,52 @@ export function LiveFaceSwapPanel() {
           ) : null}
         </div>
 
-        <div className="flex min-h-[520px] flex-col p-4 sm:p-5">
+        <div
+          ref={outputStageRef}
+          className={cn(
+            'flex min-h-[520px] flex-col p-4 sm:p-5',
+            isFullscreen && 'h-screen min-h-0 w-screen bg-[rgba(34,26,23,0.98)]'
+          )}
+        >
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-white/88">
               Live AI output
             </p>
-            <span
-              className={cn(
-                'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium tabular-nums',
-                phase === 'live'
-                  ? 'border-green-500/30 bg-green-500/10 text-green-300'
-                  : 'border-white/10 bg-white/[0.04] text-white/55'
-              )}
-            >
+            <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  'size-1.5 rounded-full',
+                  'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium tabular-nums',
                   phase === 'live'
-                    ? 'animate-pulse bg-green-400'
-                    : 'bg-white/35'
+                    ? 'border-green-500/30 bg-green-500/10 text-green-300'
+                    : 'border-white/10 bg-white/[0.04] text-white/55'
                 )}
-              />
-              {statusLabel}
-            </span>
+              >
+                <span
+                  className={cn(
+                    'size-1.5 rounded-full',
+                    phase === 'live'
+                      ? 'animate-pulse bg-green-400'
+                      : 'bg-white/35'
+                  )}
+                />
+                {statusLabel}
+              </span>
+              <button
+                type="button"
+                className="inline-flex size-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:bg-white/[0.09] hover:text-white"
+                aria-label={
+                  isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'
+                }
+                title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                onClick={() => void toggleFullscreen()}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="size-3.5" />
+                ) : (
+                  <Maximize2 className="size-3.5" />
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10 bg-[#0f0c0b]">

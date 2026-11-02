@@ -1,4 +1,4 @@
-import { and, count, eq, gte, like, isNull } from 'drizzle-orm';
+import { and, count, eq, gte, isNull, like } from 'drizzle-orm';
 
 import { db } from '@/core/db';
 import { aiTask, credit } from '@/config/db/schema';
@@ -7,6 +7,7 @@ import { rowsAffectedFromUpdate } from '@/lib/fal-query-error-cas';
 import { getSnowId } from '@/lib/hash';
 
 import {
+  calculateLiveFaceSwapSettlement,
   LIVE_FACE_SWAP_CREDITS,
   LIVE_FACE_SWAP_MAX_CHUNKS,
   LIVE_FACE_SWAP_MODEL,
@@ -16,12 +17,14 @@ import {
   LIVE_FACE_SWAP_RENEW_LATE_MS,
   LIVE_FACE_SWAP_SCENE,
   LIVE_FACE_SWAP_SECONDS,
-  calculateLiveFaceSwapSettlement,
   liveFaceSwapPaidUntil,
 } from './pricing';
 
 export class LiveFaceSwapInsufficientCreditsError extends Error {
-  constructor(public requiredCredits: number, public balance: number) {
+  constructor(
+    public requiredCredits: number,
+    public balance: number
+  ) {
     super('Insufficient credits to continue the live session');
     this.name = 'LiveFaceSwapInsufficientCreditsError';
   }
@@ -286,7 +289,9 @@ export async function getLiveFaceSwapPaidState(params: {
 }) {
   const task = await findSession(params.sessionId, params.userId);
   if (!task || task.status !== 'active') {
-    throw new LiveFaceSwapSessionConflictError('Live session is no longer active');
+    throw new LiveFaceSwapSessionConflictError(
+      'Live session is no longer active'
+    );
   }
   const issuedAtMs = extractIssuedAt(task.taskInfo);
   if (!issuedAtMs) {
@@ -304,11 +309,18 @@ export async function getLiveFaceSwapPaidState(params: {
     );
   const paidSequences = new Set(
     chunks
-      .filter((chunk: { id: string; status: string }) => chunk.status === 'paid')
-      .map((chunk: { id: string }) => Number(chunk.id.slice(params.sessionId.length + 1)))
+      .filter(
+        (chunk: { id: string; status: string }) => chunk.status === 'paid'
+      )
+      .map((chunk: { id: string }) =>
+        Number(chunk.id.slice(params.sessionId.length + 1))
+      )
   );
   let sequence = 0;
-  while (paidSequences.has(sequence + 1) && sequence + 1 < LIVE_FACE_SWAP_MAX_CHUNKS) {
+  while (
+    paidSequences.has(sequence + 1) &&
+    sequence + 1 < LIVE_FACE_SWAP_MAX_CHUNKS
+  ) {
     sequence++;
   }
   return {
@@ -335,7 +347,9 @@ export async function renewLiveFaceSwapSession(params: {
     return paid; // Retry after successful charge: do not charge twice.
   }
   if (params.sequence !== paid.sequence + 1) {
-    throw new LiveFaceSwapSessionConflictError('Renewal sequence must be consecutive');
+    throw new LiveFaceSwapSessionConflictError(
+      'Renewal sequence must be consecutive'
+    );
   }
 
   const now = Date.now();
@@ -344,7 +358,9 @@ export async function renewLiveFaceSwapSession(params: {
     now < previousPaidUntil - LIVE_FACE_SWAP_RENEW_AHEAD_MS ||
     now > previousPaidUntil + LIVE_FACE_SWAP_RENEW_LATE_MS
   ) {
-    throw new LiveFaceSwapSessionConflictError('Renewal is outside the allowed payment window');
+    throw new LiveFaceSwapSessionConflictError(
+      'Renewal is outside the allowed payment window'
+    );
   }
 
   // A stop may race an in-flight renewal. That paid final chunk is visible
@@ -391,11 +407,16 @@ async function refundUnusedLiveCredits(params: {
   try {
     await db().insert(credit).values(data);
   } catch {
-    const [existing] = await db().select().from(credit)
-      .where(eq(credit.id, id)).limit(1);
+    const [existing] = await db()
+      .select()
+      .from(credit)
+      .where(eq(credit.id, id))
+      .limit(1);
     if (
-      !existing || existing.userId !== params.userId ||
-      existing.transactionType !== 'grant' || existing.credits !== params.credits
+      !existing ||
+      existing.userId !== params.userId ||
+      existing.transactionType !== 'grant' ||
+      existing.credits !== params.credits
     ) {
       throw new LiveFaceSwapSessionConflictError(
         'Unused live credit refund needs manual reconciliation'
@@ -411,13 +432,18 @@ type LiveSettlementResult = LiveSettlement & {
   refundCreditId?: string | null;
 };
 
-function readSettlement(value: string | null | undefined): LiveSettlementResult | null {
+function readSettlement(
+  value: string | null | undefined
+): LiveSettlementResult | null {
   if (!value) return null;
   try {
     const data = JSON.parse(value);
-    return data && data.status === 'settled' &&
+    return data &&
+      data.status === 'settled' &&
       Number.isSafeInteger(data.chargedCredits) &&
-      Number.isSafeInteger(data.refundedCredits) ? data : null;
+      Number.isSafeInteger(data.refundedCredits)
+      ? data
+      : null;
   } catch {
     return null;
   }
@@ -430,21 +456,24 @@ function readSettlement(value: string | null | undefined): LiveSettlementResult 
  *
  * IMPORTANT: This records token-to-stop wall time, not fal's billed duration.
  * There is still no provider-enforced stop. Unsettled/racy sessions retain
- * the entire reservation for manual investigation. DO NOT ENABLE PUBLICLY.
+ * the entire reservation for manual investigation. Monitor upstream spend.
  */
 export async function endLiveFaceSwapSession(params: {
   sessionId: string;
   userId: string;
 }): Promise<LiveSettlementResult> {
   let task = await findSession(params.sessionId, params.userId);
-  // Token authorization can fail before the first ai_task insert (feature
-  // disabled, allowlist, missing provider key). Client cleanup still calls
-  // /stop; this is not a billing/reconciliation failure.
+  // Token authorization can fail before the first ai_task insert (e.g.
+  // missing provider key). Client cleanup still calls /stop; this is not
+  // a billing/reconciliation failure.
   if (!task || task.status === 'insufficient') {
     return {
-      status: 'not-started', billedSeconds: 0,
-      reservedCredits: 0, chargedCredits: 0,
-      refundedCredits: 0, uncoveredCredits: 0,
+      status: 'not-started',
+      billedSeconds: 0,
+      reservedCredits: 0,
+      chargedCredits: 0,
+      refundedCredits: 0,
+      uncoveredCredits: 0,
       billingBasis: 'server-token-wallclock',
     };
   }
@@ -452,9 +481,12 @@ export async function endLiveFaceSwapSession(params: {
   // Treat duplicate stop reports as successful idempotent cleanup.
   if (task.status === 'refunded') {
     return {
-      status: 'settled', billedSeconds: 0,
-      reservedCredits: LIVE_FACE_SWAP_CREDITS, chargedCredits: 0,
-      refundedCredits: LIVE_FACE_SWAP_CREDITS, uncoveredCredits: 0,
+      status: 'settled',
+      billedSeconds: 0,
+      reservedCredits: LIVE_FACE_SWAP_CREDITS,
+      chargedCredits: 0,
+      refundedCredits: LIVE_FACE_SWAP_CREDITS,
+      uncoveredCredits: 0,
       billingBasis: 'server-token-wallclock',
     };
   }
@@ -469,9 +501,12 @@ export async function endLiveFaceSwapSession(params: {
     task = await findSession(params.sessionId, params.userId);
     if (task?.status === 'refunded') {
       return {
-        status: 'settled', billedSeconds: 0,
-        reservedCredits: LIVE_FACE_SWAP_CREDITS, chargedCredits: 0,
-        refundedCredits: LIVE_FACE_SWAP_CREDITS, uncoveredCredits: 0,
+        status: 'settled',
+        billedSeconds: 0,
+        reservedCredits: LIVE_FACE_SWAP_CREDITS,
+        chargedCredits: 0,
+        refundedCredits: LIVE_FACE_SWAP_CREDITS,
+        uncoveredCredits: 0,
         billingBasis: 'server-token-wallclock',
       };
     }
@@ -480,22 +515,33 @@ export async function endLiveFaceSwapSession(params: {
   if (task.status === 'active') {
     const issuedAtMs = extractIssuedAt(task.taskInfo);
     if (!issuedAtMs) {
-      throw new LiveFaceSwapSessionConflictError('Session clock is unavailable');
+      throw new LiveFaceSwapSessionConflictError(
+        'Session clock is unavailable'
+      );
     }
     const endedAtMs = Math.max(Date.now(), issuedAtMs);
-    const claimed = await db().update(aiTask).set({
-      status: 'settling',
-      taskInfo: JSON.stringify({ issuedAtMs, endedAtMs }),
-    }).where(and(
-      eq(aiTask.id, params.sessionId),
-      eq(aiTask.userId, params.userId),
-      eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
-      eq(aiTask.status, 'active')
-    ));
+    const claimed = await db()
+      .update(aiTask)
+      .set({
+        status: 'settling',
+        taskInfo: JSON.stringify({ issuedAtMs, endedAtMs }),
+      })
+      .where(
+        and(
+          eq(aiTask.id, params.sessionId),
+          eq(aiTask.userId, params.userId),
+          eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
+          eq(aiTask.status, 'active')
+        )
+      );
     if (rowsAffectedFromUpdate(claimed) !== 1) {
       task = await findSession(params.sessionId, params.userId);
     } else {
-      task = { ...task, status: 'settling', taskInfo: JSON.stringify({ issuedAtMs, endedAtMs }) };
+      task = {
+        ...task,
+        status: 'settling',
+        taskInfo: JSON.stringify({ issuedAtMs, endedAtMs }),
+      };
     }
   }
 
@@ -515,13 +561,19 @@ export async function endLiveFaceSwapSession(params: {
   } catch {
     throw new LiveFaceSwapSessionConflictError('Invalid session timestamps');
   }
-  const children = await db().select({
-    id: aiTask.id, status: aiTask.status,
-  }).from(aiTask).where(and(
-    eq(aiTask.userId, params.userId),
-    eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
-    like(aiTask.id, params.sessionId + ':%')
-  ));
+  const children = await db()
+    .select({
+      id: aiTask.id,
+      status: aiTask.status,
+    })
+    .from(aiTask)
+    .where(
+      and(
+        eq(aiTask.userId, params.userId),
+        eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
+        like(aiTask.id, params.sessionId + ':%')
+      )
+    );
   const paid = new Set<number>();
   for (const chunk of children) {
     if (chunk.status === 'charging' || chunk.status === 'reserved') {
@@ -556,17 +608,24 @@ export async function endLiveFaceSwapSession(params: {
     credits: settlement.refundedCredits,
   });
   const result: LiveSettlementResult = {
-    ...settlement, status: 'settled', refundCreditId,
+    ...settlement,
+    status: 'settled',
+    refundCreditId,
   };
-  await db().update(aiTask).set({
-    status: 'ended',
-    taskResult: JSON.stringify(result),
-  }).where(and(
-    eq(aiTask.id, params.sessionId),
-    eq(aiTask.userId, params.userId),
-    eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
-    eq(aiTask.status, 'settling')
-  ));
+  await db()
+    .update(aiTask)
+    .set({
+      status: 'ended',
+      taskResult: JSON.stringify(result),
+    })
+    .where(
+      and(
+        eq(aiTask.id, params.sessionId),
+        eq(aiTask.userId, params.userId),
+        eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
+        eq(aiTask.status, 'settling')
+      )
+    );
   // A retry returns the persisted result or safely uses the same refund ID.
   return result;
 }

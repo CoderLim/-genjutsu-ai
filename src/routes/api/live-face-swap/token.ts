@@ -12,13 +12,13 @@ import {
   refundLiveFaceSwapBeforeToken,
   reserveLiveFaceSwapSession,
 } from '@/modules/live-face-swap/billing';
+import { isSameOriginLiveFaceSwapRequest } from '@/modules/live-face-swap/origin';
 import {
   assertLiveFaceSwapSessionId,
   LIVE_FACE_SWAP_CREDITS,
   LIVE_FACE_SWAP_MODEL,
   LIVE_FACE_SWAP_TOKEN_SECONDS,
 } from '@/modules/live-face-swap/pricing';
-import { isSameOriginLiveFaceSwapRequest } from '@/modules/live-face-swap/origin';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { respData, respErr, respJson } from '@/lib/resp';
 
@@ -62,22 +62,11 @@ async function POST({ request }: { request: Request }) {
   let sessionId: string | null = null;
   let userId: string | null = null;
   try {
-    const session = await getAuth().api.getSession({ headers: request.headers });
+    const session = await getAuth().api.getSession({
+      headers: request.headers,
+    });
     if (!session?.user) return respErr('Please sign in', { status: 401 });
     userId = session.user.id;
-
-    if (process.env.LIVE_FACE_SWAP_ENABLED !== 'true') {
-      return respErr('Live Face Swap is not enabled yet', { status: 503 });
-    }
-    const emails = (process.env.LIVE_FACE_SWAP_ALLOWED_EMAILS ?? '')
-      .split(',')
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean);
-    // Explicit allowlist ONLY: admins are not automatically exempt from spend controls.
-    const permitted = emails.includes(session.user.email.toLowerCase());
-    if (!permitted) {
-      return respErr('Live Face Swap is in limited testing', { status: 403 });
-    }
 
     const body = await request.json().catch(() => ({}));
     if (body?.app !== LIVE_FACE_SWAP_MODEL) {
@@ -86,7 +75,8 @@ async function POST({ request }: { request: Request }) {
     sessionId = assertLiveFaceSwapSessionId(body.sessionId);
 
     const apiKey = (await getConfig('fal_api_key'))?.trim();
-    if (!apiKey) return respErr('Live Face Swap is not configured', { status: 503 });
+    if (!apiKey)
+      return respErr('Live Face Swap is not configured', { status: 503 });
 
     const existing = await getLiveFaceSwapSession({ sessionId, userId });
     if (!existing) {
