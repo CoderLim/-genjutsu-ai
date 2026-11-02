@@ -1,4 +1,4 @@
-import { and, count, eq, gte, isNull, like } from 'drizzle-orm';
+import { and, eq, isNull, like } from 'drizzle-orm';
 
 import { db } from '@/core/db';
 import { aiTask, credit } from '@/config/db/schema';
@@ -201,22 +201,6 @@ export async function reserveLiveFaceSwapSession(params: {
     throw new LiveFaceSwapSessionConflictError('Session ID was already used');
   }
 
-  // Trial-only spending guard. This is NOT a public distributed rate limit.
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [recent] = await db()
-    .select({ total: count() })
-    .from(aiTask)
-    .where(
-      and(
-        eq(aiTask.userId, params.userId),
-        eq(aiTask.scene, LIVE_FACE_SWAP_SCENE),
-        gte(aiTask.createdAt, since),
-        like(aiTask.options, '%"kind":"live-session"%')
-      )
-    );
-  if (Number(recent?.total ?? 0) >= 5) {
-    throw new LiveFaceSwapSessionConflictError('Daily pilot limit reached');
-  }
   await chargeChunk({
     id: params.sessionId,
     sessionId: params.sessionId,
