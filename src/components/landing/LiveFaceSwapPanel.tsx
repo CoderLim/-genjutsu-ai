@@ -766,11 +766,8 @@ export function LiveFaceSwapPanel() {
           </section>
 
           <section className="rounded-2xl border border-white/10 bg-black/20 p-3.5">
-            <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="mb-3">
               <p className="text-sm font-semibold text-white/88">Reference</p>
-              <span className="text-[11px] text-white/35">
-                {LIVE_FACE_SWAP_CREDITS_PER_SECOND} credits/s
-              </span>
             </div>
             <input
               ref={inputRef}
@@ -952,7 +949,7 @@ export function LiveFaceSwapPanel() {
             </p>
             <span
               className={cn(
-                'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium',
+                'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium tabular-nums',
                 phase === 'live'
                   ? 'border-green-500/30 bg-green-500/10 text-green-300'
                   : 'border-white/10 bg-white/[0.04] text-white/55'
