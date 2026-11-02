@@ -39,9 +39,12 @@ const LUCY_PROMPT =
   'Maintain the original body, clothes, head movement, expressions, camera framing, ' +
   'lighting, and background. Keep all non-face areas unchanged. Make the replacement natural and stable.';
 
-/** First-party R2 portraits (≥512px). Do not point at third-party gallery CDNs. */
-const GALLERY_PUBLIC_BASE =
-  'https://pub-fea47c6abb5a46ff9f33ce34b71ee2dd.r2.dev/uploads/live-face-swap/gallery';
+/**
+ * Same-origin gallery assets (also mirrored on R2 under
+ * uploads/live-face-swap/gallery/). Relative paths avoid cross-origin fetch
+ * failures when converting presets to data URIs in the browser.
+ */
+const GALLERY_PUBLIC_BASE = '/live-face-swap/gallery';
 
 const REFERENCE_GALLERY = [
   {
@@ -70,6 +73,18 @@ const REFERENCE_GALLERY = [
     url: `${GALLERY_PUBLIC_BASE}/custom-character-075.webp`,
   },
 ] as const;
+
+function absoluteGalleryUrl(pathOrUrl: string): string {
+  if (
+    pathOrUrl.startsWith('data:') ||
+    pathOrUrl.startsWith('blob:') ||
+    /^https?:\/\//i.test(pathOrUrl)
+  ) {
+    return pathOrUrl;
+  }
+  if (typeof window === 'undefined') return pathOrUrl;
+  return new URL(pathOrUrl, window.location.origin).href;
+}
 
 type Phase =
   | 'idle'
@@ -355,8 +370,8 @@ export function LiveFaceSwapPanel() {
     setGalleryId(item.id);
     setReferenceSource('gallery');
     setPhotoPreview(item.url);
-    // Fal needs a reachable ≥512px image (data URI or public URL). Load into a
-    // data URI so the session does not depend on fal fetching the CDN at start.
+    // Prefer a data URI so Lucy does not need a separate CDN fetch. Fall back
+    // to an absolute same-origin URL if browser decode fails.
     try {
       const response = await fetch(item.url);
       if (!response.ok) throw new Error('Gallery image unavailable');
@@ -374,8 +389,8 @@ export function LiveFaceSwapPanel() {
       setReferenceData(photo.data);
     } catch {
       if (selection !== photoSelectionRef.current) return;
-      setReferenceData(null);
-      setError('Could not load the gallery reference. Try again or upload.');
+      setReferenceData(absoluteGalleryUrl(item.url));
+      setError('');
     }
   }
 
@@ -503,7 +518,7 @@ export function LiveFaceSwapPanel() {
         endpointId: LUCY_ENDPOINT,
         input: {
           prompt: LUCY_PROMPT,
-          reference_image_url: referenceData,
+          reference_image_url: absoluteGalleryUrl(referenceData),
           enable_prompt_expansion: false,
         },
         localStream: camera,
