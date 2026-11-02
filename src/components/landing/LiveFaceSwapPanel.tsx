@@ -34,8 +34,9 @@ import { InsufficientCreditsModal } from '@/components/credits/insufficient-cred
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 const LUCY_ENDPOINT = 'decart/lucy-2-5/realtime';
 const LUCY_PROMPT =
-  'Replace only the visible person’s face with the face of the person in the reference image. ' +
-  'Maintain the original hair, hairstyle, body, clothes, head movement, expressions, camera framing, ' +
+  'Replace only the visible person’s face with the face of the character in the reference image. ' +
+  'Match the reference character’s face identity closely — human, animal, stylized, or non-human. ' +
+  'Maintain the original body, clothes, head movement, expressions, camera framing, ' +
   'lighting, and background. Keep all non-face areas unchanged. Make the replacement natural and stable.';
 
 /** First-party R2 portraits (≥512px). Do not point at third-party gallery CDNs. */
