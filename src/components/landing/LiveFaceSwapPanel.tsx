@@ -22,7 +22,6 @@ import {
   LIVE_FACE_SWAP_CREDITS,
   LIVE_FACE_SWAP_CREDITS_PER_SECOND,
   LIVE_FACE_SWAP_MAX_CHUNKS,
-  LIVE_FACE_SWAP_SECONDS,
 } from '@/modules/live-face-swap/pricing';
 import { ApiError, apiPost } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
@@ -109,6 +108,16 @@ type LiveHandle = {
   ready: Promise<unknown>;
 };
 
+/** Visual-only clock, independent of server-side credit settlement. */
+function formatLiveDuration(seconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const remainder = safeSeconds % 60;
+  const mmss = `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+  return hours > 0 ? `${hours}:${mmss}` : mmss;
+}
+
 const buttonPrimary =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#f0b06b,#d77b42)] px-5 py-2.5 text-sm font-semibold text-[#24170f] shadow-[0_8px_20px_rgba(215,123,66,0.12)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40';
 const buttonSecondary =
@@ -164,8 +173,6 @@ export function LiveFaceSwapPanel() {
   const [billing, setBilling] = useState<PaidState | null>(null);
   const [settlement, setSettlement] = useState<SettlementResponse | null>(null);
   const [settling, setSettling] = useState(false);
-  const [renewing, setRenewing] = useState(false);
-  const [autoRenew, setAutoRenew] = useState(true);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -180,6 +187,7 @@ export function LiveFaceSwapPanel() {
   const photoSelectionRef = useRef(0);
   const operationRef = useRef(0);
   const paidRef = useRef<PaidState | null>(null);
+  const liveStartedAtRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const renewingRef = useRef(false);
   const cameraAttemptRef = useRef(0);
@@ -194,7 +202,6 @@ export function LiveFaceSwapPanel() {
     const endedSessionId = sessionIdRef.current;
     sessionIdRef.current = null;
     renewingRef.current = false;
-    setRenewing(false);
     if (endedSessionId) setSettling(true);
     releaseTimers();
     const live = liveRef.current;
@@ -206,6 +213,7 @@ export function LiveFaceSwapPanel() {
     }
     setHasRemoteVideo(false);
     setElapsed(0);
+    liveStartedAtRef.current = null;
     paidRef.current = null;
     setBilling(null);
     setPhase(cameraRef.current?.active ? 'camera-ready' : 'idle');
@@ -418,6 +426,7 @@ export function LiveFaceSwapPanel() {
     setHasRemoteVideo(false);
     setBilling(null);
     setSettlement(null);
+    liveStartedAtRef.current = null;
     paidRef.current = null;
     const sessionId = crypto.randomUUID();
     sessionIdRef.current = sessionId;
@@ -499,6 +508,15 @@ export function LiveFaceSwapPanel() {
         },
         onMedia: (remoteStream) => {
           if (operation !== operationRef.current) return;
+          // Visual timer starts at first received AI video track, not token
+          // issuance. Repeated media callbacks and renewals cannot reset it.
+          if (
+            liveStartedAtRef.current === null &&
+            remoteStream.getVideoTracks().length > 0
+          ) {
+            liveStartedAtRef.current = Date.now();
+            setElapsed(0);
+          }
           outputRef.current = remoteStream;
           if (outputVideoRef.current) {
             outputVideoRef.current.srcObject = remoteStream;
@@ -533,18 +551,18 @@ export function LiveFaceSwapPanel() {
               setClockMs(now);
               const paid = paidRef.current;
               if (!paid) return;
-              setElapsed(
-                Math.max(0, Math.floor((now - paid.issuedAtMs) / 1000))
-              );
+              const liveStartedAt = liveStartedAtRef.current;
+              if (liveStartedAt !== null) {
+                setElapsed(Math.max(0, Math.floor((now - liveStartedAt) / 1000)));
+              }
               if (now >= paid.paidUntilMs) {
                 setError(
-                  'Your prepaid live time has ended. Start a new session to continue.'
+                  'Your live session ended. Start a new session to continue.'
                 );
                 void stopLive();
                 return;
               }
               if (
-                !autoRenew ||
                 !outputRef.current?.getVideoTracks().length ||
                 now < paid.paidUntilMs - 8_000 ||
                 renewingRef.current
@@ -559,7 +577,6 @@ export function LiveFaceSwapPanel() {
                 return;
               }
               renewingRef.current = true;
-              setRenewing(true);
               const expectedSequence = paid.sequence + 1;
               void apiPost<PaidState>('/api/live-face-swap/renew', {
                 sessionId,
@@ -611,7 +628,6 @@ export function LiveFaceSwapPanel() {
                 .finally(() => {
                   if (operation !== operationRef.current) return;
                   renewingRef.current = false;
-                  setRenewing(false);
                 });
             }, 500);
           }
@@ -666,15 +682,22 @@ export function LiveFaceSwapPanel() {
   const canStart = Boolean(
     referenceData && consent && cameraRef.current && !active && !settling
   );
-  const secondsLeft = billing
-    ? Math.max(0, Math.ceil((billing.paidUntilMs - clockMs) / 1000))
+  // The provider session clock starts at token issuance. Keep the customer
+  // estimate separate from the visible Live timer (which starts on video).
+  const estimatedCredits = billing
+    ? Math.ceil(
+        (Math.max(0, Math.ceil((clockMs - billing.issuedAtMs) / 1000)) *
+          LIVE_FACE_SWAP_CREDITS_PER_SECOND)
+      )
     : 0;
   const cameraOn = phase !== 'idle' && phase !== 'camera-starting';
   const statusLabel =
     phase === 'connecting'
       ? 'Connecting'
       : phase === 'live'
-        ? `Live · ${secondsLeft}s`
+        ? hasRemoteVideo
+          ? `Live · ${formatLiveDuration(elapsed)}`
+          : 'Live · Waiting for AI output'
         : settling
           ? 'Settling'
           : phase === 'camera-ready'
@@ -743,11 +766,8 @@ export function LiveFaceSwapPanel() {
           </section>
 
           <section className="rounded-2xl border border-white/10 bg-black/20 p-3.5">
-            <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="mb-3">
               <p className="text-sm font-semibold text-white/88">Reference</p>
-              <span className="text-[11px] text-white/35">
-                {LIVE_FACE_SWAP_CREDITS_PER_SECOND} credits/s
-              </span>
             </div>
             <input
               ref={inputRef}
@@ -858,17 +878,6 @@ export function LiveFaceSwapPanel() {
             processing of my camera stream.
           </label>
 
-          <label className="flex items-center gap-2 px-0.5 text-[11px] text-white/55">
-            <input
-              type="checkbox"
-              checked={autoRenew}
-              disabled={active || settling}
-              onChange={(event) => setAutoRenew(event.target.checked)}
-              className="size-3.5 accent-[#d99a68]"
-            />
-            Auto-renew every {LIVE_FACE_SWAP_SECONDS}s
-          </label>
-
           <div className="rounded-xl border border-white/10 bg-white/[0.025] px-3 py-2.5 text-[11px] leading-4 text-white/60">
             <div className="flex justify-between gap-2">
               <span>Balance</span>
@@ -877,24 +886,14 @@ export function LiveFaceSwapPanel() {
               </span>
             </div>
             <div className="mt-1 flex justify-between gap-2">
-              <span>Prepaid chunk</span>
-              <span>
-                {LIVE_FACE_SWAP_CREDITS} credits / {LIVE_FACE_SWAP_SECONDS}s
-              </span>
+              <span>Live rate</span>
+              <span>{LIVE_FACE_SWAP_CREDITS_PER_SECOND} credits/s</span>
             </div>
-            {billing ? (
-              <>
-                <div className="mt-1 flex justify-between gap-2">
-                  <span>Reserved</span>
-                  <span>{billing.chargedCredits} credits</span>
-                </div>
-                <div className="mt-1 flex justify-between gap-2">
-                  <span>Time left</span>
-                  <span>
-                    {secondsLeft}s{renewing ? ' · Renewing…' : ''}
-                  </span>
-                </div>
-              </>
+            {billing && active ? (
+              <div className="mt-1 flex justify-between gap-2">
+                <span>Estimated charge</span>
+                <span className="tabular-nums">{estimatedCredits} credits</span>
+              </div>
             ) : null}
             {settling ? (
               <div className="mt-2 text-amber-200/80">
@@ -916,12 +915,12 @@ export function LiveFaceSwapPanel() {
                 </div>
                 {settlement.status === 'settled' ? (
                   <div className="flex justify-between gap-2">
-                    <span>Unused reservation returned</span>
+                    <span>Credits returned</span>
                     <span>{settlement.refundedCredits} credits</span>
                   </div>
                 ) : (
                   <p className="mt-1 text-amber-200/80">
-                    Reserved credits remain held pending review.
+                    Final billing is pending review.
                   </p>
                 )}
               </div>
@@ -929,10 +928,8 @@ export function LiveFaceSwapPanel() {
           </div>
 
           <p className="px-0.5 text-[11px] leading-4 text-white/35">
-            We reserve {LIVE_FACE_SWAP_CREDITS} credits per{' '}
-            {LIVE_FACE_SWAP_SECONDS}s, then estimate used seconds from token
-            issuance to stop. Unused reserved credits return on successful
-            settlement. Preview-only pilot — not verified provider billing.
+            Live usage includes connection setup. Final credits are calculated
+            when you stop. Preview-only pilot.
           </p>
 
           {error ? (
@@ -952,7 +949,7 @@ export function LiveFaceSwapPanel() {
             </p>
             <span
               className={cn(
-                'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium',
+                'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium tabular-nums',
                 phase === 'live'
                   ? 'border-green-500/30 bg-green-500/10 text-green-300'
                   : 'border-white/10 bg-white/[0.04] text-white/55'
@@ -1008,7 +1005,7 @@ export function LiveFaceSwapPanel() {
                           ? 'Choose a reference face to continue.'
                           : !consent
                             ? 'Confirm consent before starting.'
-                            : `Credit usage starts when AI output appears · ${LIVE_FACE_SWAP_CREDITS} credits / ${LIVE_FACE_SWAP_SECONDS}s`}
+                            : `${LIVE_FACE_SWAP_CREDITS_PER_SECOND} credits/s · usage includes connection setup`}
                     </p>
                   </>
                 )}

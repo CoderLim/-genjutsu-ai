@@ -6,7 +6,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Film, LoaderCircle, Play, RefreshCw, Sparkles } from 'lucide-react';
+import { Film, LoaderCircle, Play, Radio, RefreshCw, Sparkles } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
 import { Link } from '@/core/i18n/navigation';
@@ -26,6 +26,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+type LiveSessionHistory = {
+  state: 'completed' | 'starting' | 'unconfirmed' | 'review' | 'not-started';
+  billedSeconds: number | null;
+  finalCredits: number | null;
+  returnedCredits: number | null;
+  endedAtMs: number | null;
+};
+
 interface Generation {
   id: string;
   scene: string;
@@ -36,6 +44,7 @@ interface Generation {
   aspectRatio: string | null;
   duration: number | null;
   costCredits: number;
+  liveSession?: LiveSessionHistory;
   sourceVideoUrl: string | null;
   videoUrl: string | null;
   createdAt: string;
@@ -160,6 +169,108 @@ function VideoThumb({
         </span>
       </span>
     </button>
+  );
+}
+
+/**
+ * Live Face Swap is preview-only. Render a metadata-only history card rather
+ * than a fake video thumbnail, permanent "processing" spinner, or download.
+ */
+function LiveSessionCard({
+  generation,
+  onRefresh,
+  refreshing,
+}: {
+  generation: Generation;
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
+  const history = generation.liveSession;
+  const state = history?.state ?? 'review';
+  const label =
+    state === 'completed'
+      ? m['creations.status.completed']()
+      : state === 'unconfirmed'
+        ? m['creations.live_unconfirmed']()
+        : state === 'starting'
+          ? m['creations.live_starting']()
+          : state === 'not-started'
+            ? m['creations.live_not_started']()
+            : m['creations.live_review']();
+
+  return (
+    <Card className="overflow-hidden py-0">
+      <div className="bg-muted/40 relative flex aspect-video flex-col items-center justify-center gap-3 p-6 text-center">
+        <Radio className="text-muted-foreground size-10" />
+        <span className="text-muted-foreground max-w-56 text-sm">
+          {m['creations.live_no_recording']()}
+        </span>
+        <Badge
+          variant={state === 'completed' ? 'default' : 'secondary'}
+          className="absolute top-3 right-3 z-10"
+        >
+          {label}
+        </Badge>
+      </div>
+      <CardContent className="space-y-4 p-4">
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold">
+            {m['creations.live_title']()}
+          </h2>
+          <div className="text-muted-foreground space-y-1 text-xs">
+            {state === 'completed' && history ? (
+              <>
+                {history.endedAtMs !== null ? (
+                  <div className="flex justify-between gap-3">
+                    <span>{m['creations.live_ended_at']()}</span>
+                    <span>{formatDateTime(new Date(history.endedAtMs).toISOString())}</span>
+                  </div>
+                ) : null}
+                <div className="flex justify-between gap-3">
+                  <span>{m['creations.live_duration']()}</span>
+                  <span className="tabular-nums">{history.billedSeconds}s</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span>{m['creations.live_final_charge']()}</span>
+                  <span className="tabular-nums">
+                    {m['creations.credits']({ count: history.finalCredits ?? 0 })}
+                  </span>
+                </div>
+                {history.returnedCredits !== null && history.returnedCredits > 0 ? (
+                  <div className="flex justify-between gap-3">
+                    <span>{m['creations.live_credits_returned']()}</span>
+                    <span className="tabular-nums">
+                      {m['creations.credits']({ count: history.returnedCredits })}
+                    </span>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <p>{label}</p>
+            )}
+          </div>
+        </div>
+        <div className="text-muted-foreground flex items-center justify-between gap-3 text-xs">
+          <span>{formatDateTime(generation.createdAt)}</span>
+          <span className="font-mono">{generation.id.slice(0, 8)}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/live-face-swap"
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            <Radio className="size-4" />
+            {m['creations.live_new_session']()}
+          </Link>
+          {state !== 'completed' && state !== 'not-started' ? (
+            <Button variant="outline" onClick={onRefresh} disabled={refreshing}>
+              <RefreshCw className={refreshing ? 'size-4 animate-spin' : 'size-4'} />
+              {m['creations.refresh_status']()}
+            </Button>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -344,6 +455,7 @@ function CreationsPage() {
   const processingGenerations = useMemo(
     () =>
       (query.data?.items ?? []).filter((generation) =>
+        generation.scene !== 'live-face-swap' &&
         isProcessingStatus(generation.status)
       ),
     [query.data?.items]
@@ -518,18 +630,27 @@ function CreationsPage() {
         ) : (
           <>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {(query.data?.items ?? []).map((generation) => (
-                <GenerationCard
-                  key={generation.id}
-                  generation={generation}
-                  onPreview={setPreview}
-                  onRefresh={(item) => refreshMutation.mutate(item)}
-                  refreshing={
-                    refreshMutation.isPending &&
-                    refreshMutation.variables?.id === generation.id
-                  }
-                />
-              ))}
+              {(query.data?.items ?? []).map((generation) =>
+                generation.scene === 'live-face-swap' ? (
+                  <LiveSessionCard
+                    key={generation.id}
+                    generation={generation}
+                    onRefresh={() => void query.refetch()}
+                    refreshing={query.isFetching}
+                  />
+                ) : (
+                  <GenerationCard
+                    key={generation.id}
+                    generation={generation}
+                    onPreview={setPreview}
+                    onRefresh={(item) => refreshMutation.mutate(item)}
+                    refreshing={
+                      refreshMutation.isPending &&
+                      refreshMutation.variables?.id === generation.id
+                    }
+                  />
+                )
+              )}
             </div>
 
             {totalPages > 1 ? (
