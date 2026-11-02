@@ -262,16 +262,22 @@ function referenceMappingLine(references: string[]) {
  * Full-subject / reference-driven identity applies only in those scoped cases;
  * partial edits must not rewrite unassigned subjects. Defined once — do not
  * duplicate per mode.
+ *
+ * Keep this block scene-agnostic. Role cues, shot beats, and product-specific
+ * wardrobe live in the task / template prompt — not here.
  */
 export const SEEDANCE_REFERENCE_IDENTITY_RULES = [
   'REFERENCE IDENTITY:',
-  "For full person, character, or animal replacement, or reference-driven subject animation, use the assigned reference as the authoritative identity and appearance: preserve facial features, hairstyle, apparent age, body proportions, clothing, and distinctive identity traits. Do not retain or blend the original performer's identity with that reference subject; adapt source motion to its proportions; keep identity consistent across frames, cuts, and occlusions.",
+  'When the task assigns a full person, character, or animal replacement, or reference-driven subject animation, treat it as a COMPLETE identity replacement — not a clothing tweak, partial face swap, or identity blend.',
+  "The assigned reference is the sole authoritative identity and appearance: facial features (eye shape, nose, mouth, jawline, proportions), apparent age, hairstyle, hairline, skin tone, body proportions, clothing, and distinctive traits. Do not retain, carry over, average, or blend the original subject's identity with that reference. Adapt source motion and pose to the reference's proportions. Keep identity consistent across every frame, cut, angle, close-up, occlusion, and reappearance.",
+  'Hard visibility still counts: profile views, partial occlusion, motion blur, far/small subjects, frame-edge crops, extreme expressions, hats/glasses, or back-of-head views. Do not skip an assigned subject because it is hard to see.',
+  'When multiple references map to multiple subjects, follow the explicit mapping; never assign by original face similarity alone; never swap or merge assignments; do not leave any assigned subject unchanged.',
   'For partial edits (clothing, accessories, props, background), modify only specified attributes or elements and preserve identities of subjects not explicitly assigned for replacement. Follow explicit reference-to-target mappings; multiple references may be different subjects or multiple views of one subject. Never blend unrelated identities.',
 ].join('\n');
 
 const OBJECT_SWAP_RULES = [
   'OBJECT SWAP:',
-  'Replace only specified targets with assigned references. Full-subject replacements (person, character, animal, or object) must use the complete reference appearance, not selected features; apply consistently across angles, close-ups, cuts, occlusions, and reappearances. A subject assigned to a reference is a replacement target. Preserve non-targets, motion, camera, timing, framing, and composition; integrate with original perspective, scale, lighting, and motion.',
+  'Replace only specified targets with assigned references. Full-subject replacements (person, character, animal, or object) must use the complete reference appearance, not selected features — for people/characters that means face, hair, age, body, and clothing together. Apply consistently across angles, close-ups, cuts, occlusions, and reappearances. A subject assigned to a reference is a replacement target and must visibly change. Preserve non-targets, motion, camera, timing, framing, and composition; integrate with original perspective, scale, lighting, and motion.',
 ].join('\n');
 
 function motionTransferRules(video: string) {
@@ -303,7 +309,7 @@ export function buildSeedanceWorkflowPrompt(input: {
 
     if (input.imageCount > 1) {
       lines.push(
-        `Use the user instruction to determine how each reference relates to ${video}. Do not blend traits between unrelated references unless explicitly asked.`
+        `Use the user instruction to determine how each reference relates to ${video}. Do not blend traits between unrelated references unless explicitly asked. Do not leave any explicitly assigned subject unchanged.`
       );
     }
 
@@ -337,7 +343,7 @@ export function buildSeedanceWorkflowPrompt(input: {
 
   if (input.imageCount > 1) {
     lines.push(
-      'Use the task instruction to map each reference to its target. Do not merge unrelated reference identities or assign a reference to an unspecified target.'
+      'Use the task instruction to map each reference to its target. Do not merge unrelated reference identities, assign a reference to an unspecified target, leave any assigned target unchanged, or map by original face similarity alone.'
     );
   }
 

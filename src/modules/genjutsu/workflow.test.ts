@@ -10,20 +10,20 @@ import {
 } from './workflow';
 
 /**
- * Lengths at b02afb5 (pre this conditional-identity fix). Final Seedance
- * payload prompt = workflow output. Growth is expected for scoped identity
- * wording; keep it bounded below.
+ * Lengths after the scene-agnostic strong-identity system rewrite
+ * (COMPLETE replacement + hard-visibility + multi-ref no-skip). Final Seedance
+ * payload prompt = workflow output. Further growth should stay bounded below.
  */
 const BASELINE_PROMPT_LENGTHS = {
-  objectsSwapPerson: 1314,
-  objectsSwapMulti: 1550,
-  objectsSwapNoPrompt: 1349,
-  objectsSwapNoPromptMulti: 1673,
-  objectsSwapSayItRight: 2669,
-  motionTransferDance: 1158,
-  motionTransferMulti: 1403,
-  motionTransferNoPrompt: 1315,
-  motionTransferNoPromptMulti: 1490,
+  objectsSwapPerson: 2292,
+  objectsSwapMulti: 2605,
+  objectsSwapNoPrompt: 2327,
+  objectsSwapNoPromptMulti: 2728,
+  objectsSwapSayItRight: 3647,
+  motionTransferDance: 2032,
+  motionTransferMulti: 2333,
+  motionTransferNoPrompt: 2189,
+  motionTransferNoPromptMulti: 2420,
 } as const;
 
 /** Intentional identity-block rewrite may grow prompts; cap meaningless bloat. */
@@ -45,12 +45,27 @@ test('shared reference identity rules are defined once', () => {
   assert.match(SEEDANCE_REFERENCE_IDENTITY_RULES, /REFERENCE IDENTITY:/);
   assert.match(
     SEEDANCE_REFERENCE_IDENTITY_RULES,
-    /For full person, character, or animal replacement, or reference-driven subject animation/
+    /full person, character, or animal replacement, or reference-driven subject animation/
   );
-  assert.match(SEEDANCE_REFERENCE_IDENTITY_RULES, /authoritative identity/);
   assert.match(
     SEEDANCE_REFERENCE_IDENTITY_RULES,
-    /Do not retain or blend the original performer's identity with that reference subject/
+    /COMPLETE identity replacement/
+  );
+  assert.match(
+    SEEDANCE_REFERENCE_IDENTITY_RULES,
+    /sole authoritative identity/
+  );
+  assert.match(
+    SEEDANCE_REFERENCE_IDENTITY_RULES,
+    /Do not retain, carry over, average, or blend the original subject's identity/
+  );
+  assert.match(
+    SEEDANCE_REFERENCE_IDENTITY_RULES,
+    /Hard visibility still counts/
+  );
+  assert.match(
+    SEEDANCE_REFERENCE_IDENTITY_RULES,
+    /do not leave any assigned subject unchanged/
   );
   assert.match(
     SEEDANCE_REFERENCE_IDENTITY_RULES,
@@ -102,15 +117,18 @@ test('object swap full person replacement uses reference as identity source', ()
     /Full-subject replacements \(person, character, animal, or object\)/
   );
   assert.match(prompt, /complete reference appearance, not selected features/);
-  assert.match(prompt, /authoritative identity/);
+  assert.match(prompt, /must visibly change/);
+  assert.match(prompt, /sole authoritative identity/);
+  assert.match(prompt, /COMPLETE identity replacement/);
   assert.match(
     prompt,
-    /For full person, character, or animal replacement, or reference-driven subject animation/
+    /full person, character, or animal replacement, or reference-driven subject animation/
   );
   assert.match(
     prompt,
-    /Do not retain or blend the original performer's identity with that reference subject/
+    /Do not retain, carry over, average, or blend the original subject's identity/
   );
+  assert.match(prompt, /Hard visibility still counts/);
   assert.match(prompt, /Replace the lead rider with Reference 1/);
 });
 
@@ -131,7 +149,8 @@ test('motion transfer dancer uses reference as performer identity', () => {
     prompt,
     /rather than retaining the original performer's identity/
   );
-  assert.match(prompt, /authoritative identity/);
+  assert.match(prompt, /sole authoritative identity/);
+  assert.match(prompt, /COMPLETE identity replacement/);
   assert.match(prompt, /Make the person from Reference 1 dance/);
   assert.doesNotMatch(prompt, /as a visual reference according to/);
 });
@@ -154,7 +173,7 @@ test('clothing-only object swap preserves unrelated identities', () => {
   );
   assert.match(
     prompt,
-    /For full person, character, or animal replacement, or reference-driven subject animation/
+    /full person, character, or animal replacement, or reference-driven subject animation/
   );
 });
 
@@ -192,8 +211,11 @@ test('object swap maps two people to two reference images without mixing', () =>
   assert.match(prompt, /Reference 2 = @Image2/);
   assert.match(prompt, /map each reference to its target/);
   assert.match(prompt, /Do not merge unrelated reference identities/);
+  assert.match(prompt, /leave any assigned target unchanged/);
+  assert.match(prompt, /map by original face similarity alone/);
   assert.match(prompt, /Follow explicit reference-to-target mappings/);
   assert.match(prompt, /Never blend unrelated identities/);
+  assert.match(prompt, /do not leave any assigned subject unchanged/);
   assert.match(
     prompt,
     /Replace the lead rider with Reference 1 and the pursuing rider with Reference 2/
@@ -239,15 +261,16 @@ test('object swap keeps cross-shot identity through cuts and occlusion', () => {
 
   assert.match(
     prompt,
-    /apply consistently across angles, close-ups, cuts, occlusions, and reappearances/
+    /Apply consistently across angles, close-ups, cuts, occlusions, and reappearances/
   );
   assert.match(
     prompt,
-    /keep identity consistent across frames, cuts, and occlusions/
+    /Keep identity consistent across every frame, cut, angle, close-up, occlusion, and reappearance/
   );
+  assert.match(prompt, /Hard visibility still counts/);
   assert.match(
     prompt,
-    /A subject assigned to a reference is a replacement target/
+    /A subject assigned to a reference is a replacement target and must visibly change/
   );
 });
 
@@ -467,14 +490,15 @@ test('Say It Right Dance final prompt has no identity conflicts', () => {
   assert.match(SAY_IT_RIGHT_PROMPT, /COMPLETE PERSON REPLACEMENT/);
   assert.match(SAY_IT_RIGHT_PROMPT, /IDENTITY PRIORITY/);
   assert.match(prompt, /REFERENCE IDENTITY:/);
+  assert.match(prompt, /COMPLETE identity replacement/);
   assert.match(
     prompt,
-    /For full person, character, or animal replacement, or reference-driven subject animation/
+    /full person, character, or animal replacement, or reference-driven subject animation/
   );
-  assert.match(prompt, /authoritative identity/);
+  assert.match(prompt, /sole authoritative identity/);
   assert.match(
     prompt,
-    /Do not retain or blend the original performer's identity with that reference subject/
+    /Do not retain, carry over, average, or blend the original subject's identity/
   );
 
   // Conflict checks: system must not weaken a full-person swap into a soft reference.
@@ -526,8 +550,9 @@ test('mixed person clothing background roles stay role-scoped', () => {
 
   assert.match(
     prompt,
-    /For full person, character, or animal replacement, or reference-driven subject animation/
+    /full person, character, or animal replacement, or reference-driven subject animation/
   );
+  assert.match(prompt, /COMPLETE identity replacement/);
   assert.match(
     prompt,
     /For partial edits \(clothing, accessories, props, background\)/

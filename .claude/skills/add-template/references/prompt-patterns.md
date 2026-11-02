@@ -29,19 +29,34 @@ Preserve camera path, lighting, and timing. Use only this authorized likeness.
 
 ### Two subjects
 
+Generic COMPLETE replacement / identity priority / hard-visibility rules already live in `buildSeedanceWorkflowPrompt` (`REFERENCE IDENTITY` + `OBJECT SWAP`). Template prompts should stay **scene-specific**: original cues, role mapping, shot beats. Do not restate the system identity block.
+
+Prefer explicit cues + mapping when either subject is small, far, motion-blurred, occluded, profile-only, or easy to miss in a short preview (first ~4s):
+
 ```text
-Replace the <adult/role A> in @Video 1 with the person in @Image 1 — face, hair, build, outfit, and accessories.
-Replace the <child/role B> in @Video 1 with the person in @Image 2 — face, hair, build, outfit, and accessories.
+ORIGINAL SUBJECT CUES (identify who to replace; do NOT copy these looks onto the replacements):
+- Person A: <distinctive original cues / where they appear>.
+- Person B: <distinctive original cues / where they appear>.
+
+ROLE MAPPING (same two identities for the whole clip):
+- Person A → @Image 1.
+- Person B → @Image 2.
+
+SHOT BEAT (optional):
+1) ...
+
+Preserve camera path, <key props>, lighting, and timing. Use only these authorized likenesses.
+```
+
+Light two-subject shape (only when both subjects stay large and clear throughout):
+
+```text
+Replace the <role A> in @Video 1 with the person in @Image 1 — face, hair, build, outfit, and accessories.
+Replace the <role B> in @Video 1 with the person in @Image 2 — face, hair, build, outfit, and accessories.
 
 REFERENCE MAPPING:
 @Image 1 → <role A> (<where>).
 @Image 2 → <role B> (<where>).
-
-SHOT BEAT (same two people throughout):
-1) ...
-2) ...
-
-Keep one continuous identity per reference across every cut. Do not swap assignments or invent extra people.
 
 Preserve camera path, <key props>, lighting, and timing. Use only these authorized likenesses.
 ```

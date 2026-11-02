@@ -107,12 +107,12 @@ test('SeeAPI multi-image objects swap uses role-aware multi-reference editing', 
     prompt,
     /Apply each explicitly specified reference-to-target mapping according to its assigned role/
   );
+  assert.match(prompt, /do not leave any assigned subject unchanged/);
   assert.match(
     prompt,
     /Do not treat every reference as a separate person or character/
   );
   assert.doesNotMatch(prompt, /every @ImageN/);
-  assert.doesNotMatch(prompt, /face, hair, body, clothing/);
 });
 
 test('SeeAPI multi-image mixed roles do not force every reference into a full person swap', () => {

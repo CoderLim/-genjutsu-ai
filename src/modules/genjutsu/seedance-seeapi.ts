@@ -65,7 +65,7 @@ function buildSeeapiWorkflowPrompt(input: {
     parts.push(
       [
         'MULTI-REFERENCE EDITING:',
-        'Apply each explicitly specified reference-to-target mapping according to its assigned role. For complete person or character replacement, preserve the assigned reference identity. For clothing, props, objects, backgrounds, or partial edits, modify only the requested elements. Do not treat every reference as a separate person or character. Do not merge unrelated identities or change subjects not explicitly assigned for replacement.',
+        'Apply each explicitly specified reference-to-target mapping according to its assigned role. For complete person or character replacement, use the assigned reference as the sole identity — do not leave any assigned subject unchanged, even when far, small, motion-blurred, occluded, in profile, or at the frame edge. For clothing, props, objects, backgrounds, or partial edits, modify only the requested elements. Do not treat every reference as a separate person or character. Do not merge unrelated identities, swap assignments, or change subjects not explicitly assigned for replacement.',
       ].join('\n')
     );
   }
