@@ -19,6 +19,7 @@ export const BLOG_POST_SLUGS: readonly string[] = [
   'how-to-make-rumpelstiltskin-ai-video',
   'how-to-make-burning-bridges-ai-video',
   'how-to-make-unforgettable-ai-car-video',
+  'how-to-make-closing-door-prank-ai-video',
 ];
 
 export type BlogPostMeta = {
