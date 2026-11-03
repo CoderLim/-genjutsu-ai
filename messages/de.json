@@ -1714,6 +1714,7 @@
   "site.generator.references": "{count} Referenzen",
   "site.generator.resolution": "Auflösung",
   "site.generator.result": "Ergebnis",
+  "site.generator.preparing_template": "Vorlagenvideo wird vorbereitet…",
   "site.generator.starting": "Referenzen werden hochgeladen und die Generierung gestartet…",
   "site.generator.still_processing": "Die Generierung läuft noch. Der Auftrag bleibt reserviert; aktualisiere die Seite, um die Prüfung fortzusetzen.",
   "site.generator.submission_uncertain": "Das Ergebnis der Generierungsübermittlung ist unklar.",

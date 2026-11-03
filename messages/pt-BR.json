@@ -1714,6 +1714,7 @@
   "site.generator.references": "{count} referências",
   "site.generator.resolution": "Resolução",
   "site.generator.result": "Resultado",
+  "site.generator.preparing_template": "Preparando o vídeo do modelo…",
   "site.generator.starting": "Enviando referências e iniciando a geração…",
   "site.generator.still_processing": "A geração ainda está em andamento. Esta tarefa permanece reservada; atualize a página para retomar a verificação.",
   "site.generator.submission_uncertain": "O resultado do envio da geração é incerto.",

@@ -19,12 +19,16 @@
     "VITE_APP_SUPPORT_EMAIL": "support@genjutsuai.net",
     // Android Chrome image materialize grayscale (client bake + runtime fallback).
     "VITE_ANDROID_CHROME_MATERIALIZE_UPLOADS": "true",
-    // Genjutsu routing — WaveSpeed Seedance 2.5 (WAVESPEED_API_KEY is a secret).
+    // Homepage Genjutsu → Higgsfield Light (HF_API_KEY is a secret).
     // CI copies this file to wrangler.jsonc on every deploy; omitting these
-    // wipes production vars and falls back to higgsfield.
-    "GENJUTSU_MOTION_PROVIDER": "seedance-wavespeed",
-    "GENJUTSU_OBJECT_SWAP_PROVIDER": "seedance-wavespeed",
-    // Keep Ark vars for rollback; unused while providers are WaveSpeed.
+    // wipes production vars.
+    "GENJUTSU_MOTION_PROVIDER": "higgsfield",
+    "GENJUTSU_OBJECT_SWAP_PROVIDER": "higgsfield",
+    "HIGGSFIELD_GENJUTSU_MOTION_MODEL": "higgsfield/genjutsu-light/motion-transfer/v1.0",
+    "HIGGSFIELD_GENJUTSU_OBJECT_SWAP_MODEL": "higgsfield/genjutsu-light/object-swap/v1.0",
+    // Allowlisted product pages stay on WaveSpeed Seedance 2.5.
+    "GENJUTSU_PRODUCT_PROVIDER": "seedance-wavespeed",
+    // Keep Ark vars for rollback.
     "ARK_API_BASE_URL": "https://ark.cn-beijing.volces.com/api/v3",
     "SEEDANCE_VOLCENGINE_MODEL": "doubao-seedance-2-5-260628",
   },

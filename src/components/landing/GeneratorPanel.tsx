@@ -16,6 +16,7 @@ import { useSession } from '@/core/auth/client';
 import { estimateGenjutsuCreditsForProvider } from '@/modules/genjutsu/pricing';
 import { ApiError, apiGet, apiPost, uploadToSignedUrl } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
+import { createTemplateApplication } from '@/lib/template-application';
 import { collectUploadDiagnostics } from '@/lib/upload-diagnostics';
 import {
   classifyUploadFailure,
@@ -76,7 +77,7 @@ type GeneratorPanelProps = {
   hidePromo?: boolean;
   /** Controlled mode — when set with onModeChange, parent owns the toggle */
   onModeChange?: (mode: GeneratorMode) => void;
-  /** One-shot apply: fetch video (+ optional images) and set prompt/resolution. */
+  /** One-shot apply: select video URL, fetch optional images, and fill settings. */
   templateRequest?: GeneratorTemplateRequest | null;
   onTemplateSettled?: (result: { requestId: number; ok: boolean }) => void;
 };
@@ -88,6 +89,9 @@ type MediaItem = {
   /** Present on validated source videos (seconds from browser metadata). */
   durationSeconds?: number;
 };
+
+// Templates can be selected before their bytes are needed for generation.
+type VideoItem = MediaItem | (Omit<MediaItem, 'file'> & { file?: never });
 
 const RESOLUTIONS = ['480p', '720p', '1080p'] as const;
 type Resolution = (typeof RESOLUTIONS)[number];
@@ -198,8 +202,8 @@ const MIN_SOURCE_VIDEO_SECONDS = 4;
 const MAX_SOURCE_VIDEO_SECONDS = 30;
 const PREVIEW_DURATION_SECONDS = MIN_SOURCE_VIDEO_SECONDS;
 
-function revokeItem(item: MediaItem | null) {
-  if (item) URL.revokeObjectURL(item.url);
+function revokeItem(item: VideoItem | null) {
+  if (item?.url.startsWith('blob:')) URL.revokeObjectURL(item.url);
 }
 
 function revokeAll(items: MediaItem[]) {
@@ -293,7 +297,7 @@ function MediaLightbox({
   kind,
   onClose,
 }: {
-  item: MediaItem;
+  item: VideoItem;
   kind: 'video' | 'image';
   onClose: () => void;
 }) {
@@ -347,7 +351,7 @@ function MediaLightbox({
         ) : (
           <img
             src={item.url}
-            alt={item.file.name}
+            alt={item.file?.name ?? ''}
             className="max-h-[88vh] w-auto max-w-full rounded-xl object-contain shadow-2xl"
           />
         )}
@@ -405,8 +409,8 @@ function VideoUploadSlot({
   item,
   onChange,
 }: {
-  item: MediaItem | null;
-  onChange: (item: MediaItem | null) => void;
+  item: VideoItem | null;
+  onChange: (item: VideoItem | null) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -492,7 +496,19 @@ function VideoUploadSlot({
             className="group relative block h-[96px] w-[68px] overflow-hidden rounded-[4px] border border-[rgba(204,144,92,0.35)] shadow-[0_10px_28px_-12px_rgba(0,0,0,0.75)] focus:outline-none"
           >
             <video
+              key={item.id}
               src={item.url}
+              preload="metadata"
+              onLoadedMetadata={(event) => {
+                const durationSeconds = event.currentTarget.duration;
+                if (
+                  Number.isFinite(durationSeconds) &&
+                  durationSeconds > 0 &&
+                  durationSeconds !== item.durationSeconds
+                ) {
+                  onChange({ ...item, durationSeconds });
+                }
+              }}
               muted
               playsInline
               className="h-full w-full object-cover"
@@ -1061,11 +1077,13 @@ const activeGenerationKey = (userId: string) =>
 
 function ResultPanel({
   status,
+  preparingTemplate,
   result,
   onDismiss,
   onGenerateFull,
 }: {
   status: GenerationStatus;
+  preparingTemplate: boolean;
   result: GenerationResult | null;
   onDismiss: () => void;
   onGenerateFull: () => void;
@@ -1125,9 +1143,11 @@ function ResultPanel({
           <div className="flex flex-col items-center gap-3 py-10">
             <span className="border-primary size-9 animate-spin rounded-full border-2 border-t-transparent" />
             <p className="text-sm text-white/55">
-              {m['site.generator.progress']({
-                resolution: result?.resolution ?? '…',
-              })}
+              {preparingTemplate
+                ? m['site.generator.preparing_template']()
+                : m['site.generator.progress']({
+                    resolution: result?.resolution ?? '…',
+                  })}
             </p>
           </div>
         ) : result ? (
@@ -1191,9 +1211,10 @@ export function GeneratorPanel({
   const [prompt, setPrompt] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [resolution, setResolution] = useState<Resolution>('480p');
-  const [video, setVideo] = useState<MediaItem | null>(null);
+  const [video, setVideo] = useState<VideoItem | null>(null);
   const [images, setImages] = useState<MediaItem[]>([]);
   const [status, setStatus] = useState<GenerationStatus>('idle');
+  const [preparingTemplate, setPreparingTemplate] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [error, setError] = useState('');
   const creditGate = useCreditGate({
@@ -1204,9 +1225,16 @@ export function GeneratorPanel({
 
   const settingsRef = useRef<HTMLDivElement>(null);
   const generationRunRef = useRef(0);
-  const videoRef = useRef<MediaItem | null>(null);
+  const videoRef = useRef<VideoItem | null>(null);
   const imagesRef = useRef<MediaItem[]>([]);
-  const templateAbortRef = useRef<AbortController | null>(null);
+  const templateRunRef = useRef<{
+    requestId: number;
+    run: ReturnType<typeof createTemplateApplication>;
+  } | null>(null);
+  const statusRef = useRef(status);
+  const templateSettledRef = useRef(onTemplateSettled);
+  statusRef.current = status;
+  templateSettledRef.current = onTemplateSettled;
   const appliedTemplateIdRef = useRef<number | null>(null);
 
   videoRef.current = video;
@@ -1228,7 +1256,6 @@ export function GeneratorPanel({
   useEffect(() => {
     return () => {
       generationRunRef.current += 1;
-      templateAbortRef.current?.abort();
       revokeItem(videoRef.current);
       revokeAll(imagesRef.current);
     };
@@ -1238,10 +1265,10 @@ export function GeneratorPanel({
     if (!templateRequest) return;
     if (appliedTemplateIdRef.current === templateRequest.requestId) return;
 
-    if (status === 'generating') {
+    if (statusRef.current === 'generating') {
       appliedTemplateIdRef.current = templateRequest.requestId;
       toast.error(m['site.templates.apply_busy']());
-      onTemplateSettled?.({
+      templateSettledRef.current?.({
         requestId: templateRequest.requestId,
         ok: false,
       });
@@ -1249,22 +1276,30 @@ export function GeneratorPanel({
     }
 
     const { requestId, template } = templateRequest;
-    appliedTemplateIdRef.current = requestId;
-    templateAbortRef.current?.abort();
-    const abort = new AbortController();
-    templateAbortRef.current = abort;
+    const run: ReturnType<typeof createTemplateApplication> =
+      createTemplateApplication(
+        (ok) => {
+          if (templateRunRef.current?.run === run) {
+            appliedTemplateIdRef.current = requestId;
+          }
+          templateSettledRef.current?.({ requestId, ok });
+        },
+        () =>
+          templateRunRef.current?.requestId === requestId &&
+          templateRunRef.current.run !== run
+      );
+    templateRunRef.current = { requestId, run };
+    const abort = { signal: run.signal };
 
     void (async () => {
-      let nextVideo: MediaItem | null = null;
+      let nextVideo: VideoItem | null = null;
       let nextImages: MediaItem[] = [];
       try {
         if (template.sourceVideo) {
-          const videoFile = await fetchPublicAssetAsFile(
-            template.sourceVideo,
-            'video',
-            abort.signal
-          );
-          nextVideo = await buildValidatedVideoItem(videoFile);
+          nextVideo = {
+            id: `template-${requestId}`,
+            url: template.sourceVideo,
+          };
         }
 
         if (template.replaceImages) {
@@ -1288,6 +1323,10 @@ export function GeneratorPanel({
           revokeItem(nextVideo);
           revokeAll(nextImages);
           return;
+        }
+
+        if (statusRef.current === 'generating') {
+          throw new Error(m['site.templates.apply_busy']());
         }
 
         setMode(template.mode);
@@ -1314,7 +1353,7 @@ export function GeneratorPanel({
           nextImages = [];
         }
 
-        onTemplateSettled?.({ requestId, ok: true });
+        run.finish(true);
       } catch (cause) {
         revokeItem(nextVideo);
         revokeAll(nextImages);
@@ -1324,15 +1363,15 @@ export function GeneratorPanel({
             ? cause.message
             : m['site.templates.apply_failed']()
         );
-        onTemplateSettled?.({ requestId, ok: false });
+        run.finish(false);
       }
     })();
 
     return () => {
-      abort.abort();
+      run.cancel();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- apply each requestId once
-  }, [templateRequest, onTemplateSettled, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- status/callback refs do not cancel pending work
+  }, [templateRequest]);
 
   useEffect(() => {
     if (!settingsOpen) return;
@@ -1648,11 +1687,21 @@ export function GeneratorPanel({
     });
 
     let previewClip: MediaItem | null = null;
+    let downloadedVideo: MediaItem | null = null;
     try {
+      // Only materialize remote templates when generating; selection is instant.
+      setPreparingTemplate(!video.file);
+      const sourceVideo: MediaItem = video.file
+        ? { ...video, file: video.file }
+        : (downloadedVideo = await buildValidatedVideoItem(
+            await fetchPublicAssetAsFile(video.url, 'video')
+          ));
+      if (generationRunRef.current !== runId) return;
+      setPreparingTemplate(false);
       if (
         kind === 'preview' &&
-        typeof video.durationSeconds === 'number' &&
-        video.durationSeconds > PREVIEW_DURATION_SECONDS
+        typeof sourceVideo.durationSeconds === 'number' &&
+        sourceVideo.durationSeconds > PREVIEW_DURATION_SECONDS
       ) {
         // Higgsfield bills the submitted video's duration. A 480p request
         // with the original full-length input would not be a short preview.
@@ -1661,7 +1710,7 @@ export function GeneratorPanel({
         let durationSeconds: number;
         try {
           clipFile = await trimVideoToFile({
-            sourceUrl: video.url,
+            sourceUrl: sourceVideo.url,
             startSeconds: 0,
             endSeconds: PREVIEW_DURATION_SECONDS,
             fileName: 'genjutsu-preview.mp4',
@@ -1681,7 +1730,7 @@ export function GeneratorPanel({
         previewClip = { ...createMediaItem(clipFile), durationSeconds };
       }
 
-      const media = [previewClip ?? video, ...images];
+      const media = [previewClip ?? sourceVideo, ...images];
       await apiPost('/api/genjutsu/attempt', {
         generationId,
         mode,
@@ -1859,6 +1908,8 @@ export function GeneratorPanel({
       );
     } finally {
       revokeItem(previewClip);
+      revokeItem(downloadedVideo);
+      if (generationRunRef.current === runId) setPreparingTemplate(false);
     }
   };
 
@@ -2035,6 +2086,7 @@ export function GeneratorPanel({
 
       <ResultPanel
         status={status}
+        preparingTemplate={preparingTemplate}
         result={result}
         onDismiss={() => {
           setStatus('idle');

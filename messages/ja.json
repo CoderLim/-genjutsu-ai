@@ -1714,6 +1714,7 @@
   "site.generator.references": "参照画像{count}枚",
   "site.generator.resolution": "解像度",
   "site.generator.result": "生成結果",
+  "site.generator.preparing_template": "テンプレート動画を準備中…",
   "site.generator.starting": "素材をアップロードして生成を開始しています…",
   "site.generator.still_processing": "生成処理が継続中です。クレジットは予約されたままです。ページを更新すると確認を再開できます。",
   "site.generator.submission_uncertain": "生成の送信結果を確認できません。",

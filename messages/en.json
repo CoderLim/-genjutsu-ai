@@ -1000,6 +1000,7 @@
   "site.generator.result": "Result",
   "site.generator.references": "{count} references",
   "site.generator.credits": "{count} credits",
+  "site.generator.preparing_template": "Preparing template video…",
   "site.generator.starting": "Uploading references and starting generation…",
   "site.generator.progress": "Uploading references and running Genjutsu ({resolution})…",
   "site.generator.dismiss": "Dismiss result",

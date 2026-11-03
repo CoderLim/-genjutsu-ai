@@ -1714,6 +1714,7 @@
   "site.generator.references": "{count} referencias",
   "site.generator.resolution": "Resolución",
   "site.generator.result": "Resultado",
+  "site.generator.preparing_template": "Preparando el vídeo de la plantilla…",
   "site.generator.starting": "Subiendo referencias e iniciando la generación…",
   "site.generator.still_processing": "La generación sigue en curso. La tarea permanece reservada; actualiza la página para reanudar la comprobación.",
   "site.generator.submission_uncertain": "El resultado del envío de la generación es incierto.",
