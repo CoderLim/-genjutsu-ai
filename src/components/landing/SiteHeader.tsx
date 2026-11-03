@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Flame } from 'lucide-react';
 
 import { useSession } from '@/core/auth/client';
-import { Link, useRouter } from '@/core/i18n/navigation';
+import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
 import { cn } from '@/lib/cn';
 import { m } from '@/paraglide/messages.js';
@@ -12,7 +12,6 @@ import { SiteUserMenu } from '@/components/site-user-menu';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -234,7 +233,7 @@ function AuthSlot({ className }: { className?: string }) {
 
 export function SiteHeader() {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const router = useRouter();
+  const [trendingOpen, setTrendingOpen] = useState(false);
 
   return (
     <section className="text-foreground relative z-[260] py-3">
@@ -244,7 +243,7 @@ export function SiteHeader() {
           <div className="flex min-w-0 items-center gap-2 xl:gap-4">
             <BrandLink />
             <div className="flex items-center">
-              <DropdownMenu>
+              <DropdownMenu open={trendingOpen} onOpenChange={setTrendingOpen}>
                 <DropdownMenuTrigger className={navLinkClass}>
                   <TrendingHotMark className="mr-1" />
                   {m['site.header.trending']()}
@@ -254,18 +253,23 @@ export function SiteHeader() {
                   align="start"
                   className="w-[min(720px,calc(100vw-2rem))] p-3"
                 >
+                  {/*
+                    Use Link (not Menu.Item + router.push). Base UI Menu.Item
+                    close/unmount can swallow the navigate for this dense grid.
+                  */}
                   <div className="grid grid-cols-4 gap-2">
                     {TRENDING_LINKS.map((item) => (
-                      <DropdownMenuItem
+                      <Link
                         key={item.href}
-                        onClick={() => router.push(item.href)}
-                        className="hover:bg-accent focus:bg-accent flex h-auto cursor-pointer flex-col items-stretch gap-1.5 rounded-lg px-1.5 py-1.5"
+                        href={item.href}
+                        className="hover:bg-accent focus-visible:bg-accent flex h-auto cursor-pointer flex-col items-stretch gap-1.5 rounded-lg px-1.5 py-1.5 transition-colors outline-none"
+                        onClick={() => setTrendingOpen(false)}
                       >
                         <TrendingThumb poster={item.poster} />
                         <span className="text-foreground line-clamp-2 px-0.5 text-left text-xs leading-snug font-medium">
                           {item.label}
                         </span>
-                      </DropdownMenuItem>
+                      </Link>
                     ))}
                   </div>
                 </DropdownMenuContent>
