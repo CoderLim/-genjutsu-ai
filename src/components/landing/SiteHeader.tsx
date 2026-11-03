@@ -44,6 +44,7 @@ const TRENDING_LINKS = [
   { label: 'Smalltown Boy Dance', href: '/smalltown-boy-dance' },
   { label: 'Rumpelstiltskin AI', href: '/ai-rumpelstiltskin' },
   { label: 'Bulin 47 AI', href: '/bulin-47-ai' },
+  { label: 'Glow Stick AI', href: '/glow-stick-ai' },
   { label: 'Hotel Lobby', href: '/hotel-lobby-ai' },
   { label: 'Zombie Hug', href: '/ai-zombie-hug' },
   { label: 'Day of the Dead AI Video', href: '/day-of-the-dead-ai-video' },

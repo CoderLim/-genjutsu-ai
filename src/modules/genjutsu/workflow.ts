@@ -22,6 +22,7 @@ export const SAY_IT_RIGHT_AI_PRODUCT = 'say-it-right-ai' as const;
 export const ZOMBIE_HUG_PRODUCT = 'zombie-hug' as const;
 export const TINY_DESK_AI_PRODUCT = 'tiny-desk-ai' as const;
 export const SHAN_SHEN_BU_PRODUCT = 'shan-shen-bu' as const;
+export const GLOW_STICK_PRODUCT = 'glow-stick' as const;
 
 /** Keep inline to avoid a cycle with seedance-higgsfield.ts → workflow. */
 const SEEDANCE_HIGGSFIELD_MODEL_ID =
@@ -45,7 +46,8 @@ export function isGenjutsuProductId(
     value === SAY_IT_RIGHT_AI_PRODUCT ||
     value === ZOMBIE_HUG_PRODUCT ||
     value === TINY_DESK_AI_PRODUCT ||
-    value === SHAN_SHEN_BU_PRODUCT
+    value === SHAN_SHEN_BU_PRODUCT ||
+    value === GLOW_STICK_PRODUCT
   );
 }
 
@@ -161,6 +163,11 @@ export function resolveProductProviderTarget(
   product: string | null | undefined,
   mode: GenjutsuMode
 ): GenjutsuProviderTarget {
+  // Glow Stick tracks homepage Genjutsu Light (ignore PRODUCT_PROVIDER).
+  if (product === GLOW_STICK_PRODUCT) {
+    return resolveGenjutsuProviderTarget(mode);
+  }
+
   const productOverride = envConfigs.genjutsu_product_provider?.trim();
   if (productOverride && isGenjutsuProductId(product)) {
     return resolveGenjutsuProviderTargetForProvider(

@@ -10,6 +10,7 @@ import {
   FLYING_CAR_AI_PRODUCT,
   GANGNAM_STYLE_AI_PRODUCT,
   GAS_STATION_DANCE_AI_PRODUCT,
+  GLOW_STICK_PRODUCT,
   isGenjutsuProductId,
   resolveGenjutsuProviderTarget,
   resolveProductProviderTarget,
@@ -101,6 +102,15 @@ test('gas-station-dance-ai follows the mode env router', () => {
   assert.deepEqual(target, fallback);
 });
 
+test('glow-stick follows homepage objects-swap (ignores product provider)', () => {
+  const fallback = resolveGenjutsuProviderTarget('objects-swap');
+  const target = resolveProductProviderTarget(
+    GLOW_STICK_PRODUCT,
+    'objects-swap'
+  );
+  assert.deepEqual(target, fallback);
+});
+
 test('burning-bridges-ai follows the mode env router', () => {
   const fallback = resolveGenjutsuProviderTarget('objects-swap');
   const target = resolveProductProviderTarget(
@@ -159,6 +169,7 @@ test('isGenjutsuProductId allowlist', () => {
   assert.equal(isGenjutsuProductId(COLDPLAY_KISS_CAM_PRODUCT), true);
   assert.equal(isGenjutsuProductId(GANGNAM_STYLE_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(GAS_STATION_DANCE_AI_PRODUCT), true);
+  assert.equal(isGenjutsuProductId(GLOW_STICK_PRODUCT), true);
   assert.equal(isGenjutsuProductId(BURNING_BRIDGES_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(SAY_IT_RIGHT_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(ZOMBIE_HUG_PRODUCT), true);

@@ -18,6 +18,12 @@ export const HOTEL_LOBBY_OUTPUT_RATE_USD_PER_SECOND = 0.126;
 export const HOTEL_LOBBY_MIN_DURATION_SECONDS = 3;
 export const HOTEL_LOBBY_MAX_DURATION_SECONDS = 15;
 
+/**
+ * Paid Preview (`?showpreview=1`): client uploads a trimmed template clip.
+ * Must sit inside Kling's 3–15s window — 4s matches Genjutsu product previews.
+ */
+export const HOTEL_LOBBY_PREVIEW_DURATION_SECONDS = 4;
+
 /** Kling O3 reference video edge length (OpenAPI min/max width & height). */
 export const HOTEL_LOBBY_MIN_VIDEO_EDGE_PX = 720;
 export const HOTEL_LOBBY_MAX_VIDEO_EDGE_PX = 3840;
@@ -28,8 +34,11 @@ export const HOTEL_LOBBY_MAX_VIDEO_EDGE_PX = 3840;
  */
 export const HOTEL_LOBBY_MAX_PROMPT_LENGTH = 2500;
 
-/** Hotel Lobby product preset: one or two subject photos → Elements. */
-export const HOTEL_LOBBY_MAX_REFERENCE_IMAGES = 2;
+/**
+ * Hotel Lobby / Kling O3 subject photos → Elements.
+ * Fal allows elements + image_urls totaling at most 4 with a video input.
+ */
+export const HOTEL_LOBBY_MAX_REFERENCE_IMAGES = 3;
 
 /**
  * Billing / options placeholder — Kling O3 does not take a resolution
@@ -96,6 +105,15 @@ export function assertHotelLobbyDuration(duration: number) {
   ) {
     throw new Error(
       `Duration must be an integer between ${HOTEL_LOBBY_MIN_DURATION_SECONDS} and ${HOTEL_LOBBY_MAX_DURATION_SECONDS} seconds`
+    );
+  }
+}
+
+export function assertHotelLobbyPreviewDuration(duration: number) {
+  assertHotelLobbyDuration(duration);
+  if (duration !== HOTEL_LOBBY_PREVIEW_DURATION_SECONDS) {
+    throw new Error(
+      `Paid preview must use a ${HOTEL_LOBBY_PREVIEW_DURATION_SECONDS}s trimmed template clip`
     );
   }
 }

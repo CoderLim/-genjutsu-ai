@@ -24,7 +24,8 @@ export type GenjutsuProductId =
   | 'say-it-right-ai'
   | 'zombie-hug'
   | 'tiny-desk-ai'
-  | 'shan-shen-bu';
+  | 'shan-shen-bu'
+  | 'glow-stick';
 
 export type GenjutsuProviderTarget = {
   provider: GenjutsuProvider;

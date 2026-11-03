@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  assertHotelLobbyPreviewDuration,
   estimateH3LabProviderCost,
   estimateHotelLobbyCredits,
   estimateHotelLobbyProviderCost,
   HOTEL_LOBBY_OUTPUT_RATE_USD_PER_SECOND,
+  HOTEL_LOBBY_PREVIEW_DURATION_SECONDS,
 } from './pricing';
 
 test('Kling O3 Hotel Lobby estimate follows published per-second rate', () => {
@@ -60,7 +62,14 @@ test('3s and 15s Kling clips match Fal rate plus Genjutsu credit markup', () => 
   );
 });
 
-test('Hotel Lobby preset accepts one or two subject references only', () => {
+test('paid preview duration must be exactly 4s', () => {
+  assert.equal(HOTEL_LOBBY_PREVIEW_DURATION_SECONDS, 4);
+  assert.doesNotThrow(() => assertHotelLobbyPreviewDuration(4));
+  assert.throws(() => assertHotelLobbyPreviewDuration(10));
+  assert.throws(() => assertHotelLobbyPreviewDuration(3));
+});
+
+test('Hotel Lobby preset accepts up to three subject references', () => {
   assert.equal(
     estimateHotelLobbyProviderCost({
       duration: 10,
@@ -68,10 +77,17 @@ test('Hotel Lobby preset accepts one or two subject references only', () => {
     }),
     1.26
   );
-  assert.throws(() =>
+  assert.equal(
     estimateHotelLobbyProviderCost({
       duration: 10,
       imageCount: 3,
+    }),
+    1.26
+  );
+  assert.throws(() =>
+    estimateHotelLobbyProviderCost({
+      duration: 10,
+      imageCount: 4,
     })
   );
 });

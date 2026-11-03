@@ -25,6 +25,37 @@ Related:
 
 ## Log
 
+### 2026-11-03 — Kling O3 standard — Glow Stick 3-Element center swap fails
+
+Product smoke on `/glow-stick-ai` (Hotel Lobby preset `glow-stick`). Left and right dancers swapped to uploaded Elements; **center dancer repeatedly stayed the original** (adult woman, light blue button-down, long dark hair, light jeans).
+
+|                  |                                                                                                                                   |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Model**        | [`fal-ai/kling-video/o3/standard/video-to-video/edit`](https://fal.ai/models/fal-ai/kling-video/o3/standard/video-to-video/edit)  |
+| **Surface**      | `/glow-stick-ai` → `HotelLobbyGeneratorPanel` / `/api/hotel-lobby/*` (`presetId=glow-stick`)                                      |
+| **Scenario**     | Three-person glow-stick sync dance — `@Element1` left, `@Element2` center, `@Element3` right                                      |
+| **Inputs**       | Fixed template `hotel-lobby/templates/glow-stick-v1.mp4` (~10s · 720×1280) + **3** frontal reference photos (one per dancer)      |
+| **Prompt style** | Short Kling-style imperatives (`@Video1` / `@ElementN`); first ship named left/center/right without original-look cues for center |
+| **Verdict**      | **fail** (center); left/right **pass** on the same run                                                                            |
+
+**Findings**
+
+1. With **three Elements**, Kling O3 standard often **fails to replace the middle subject** while correctly swapping the side subjects.
+2. Center original is the strongest visual anchor in this template (largest motion, distinctive blue shirt / long hair / jeans) — soft “change the center dancer” wording is not enough.
+3. Same class of risk as Hotel Lobby’s old “second Element sticks” issue: multi-subject edits leave the most salient original performer in place unless the prompt **names original cues** and says **do not keep** face/hair/clothes/body.
+
+**Mitigation tried (code)**
+
+- Hardened `buildGlowStickPrompt` (preset `version: 2`): name center original look explicitly; “replace all three / never original cast”; “do not leave the original center woman”; put center swap before left/right.
+- Prefer a clear frontal `@Element2` photo for the center slot.
+- Follow-up: re-run after prompt v2; if still fail, consider Kling O3 pro, or product UX that reduces to 1–2 Elements / different staging.
+
+**Evidence**
+
+- Qualitative product run; user screenshot of output with center original boxed. Fal request id not recorded for this session.
+
+**Follow-up (same day):** `/glow-stick-ai` migrated off Kling O3 / `/api/hotel-lobby/*` onto homepage Genjutsu Light (`/api/genjutsu/*`, `higgsfield/genjutsu-light/object-swap`, product `glow-stick`, 3 refs). Re-test center swap on Light before judging the Kling failure fixed.
+
 ### 2026-10-11 — Wan 2.2 Animate / Wan VACE / Kling O3 — character identity bake-off
 
 Comparative qualitative test focused on **人物保持** (identity / face consistency) for Genjutsu-style character swap / reference-driven edit. Exact Fal request ids not recorded.

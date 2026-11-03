@@ -31,6 +31,7 @@ const STATIC_PATHS = [
   '/live-face-swap',
   '/ai-rumpelstiltskin',
   '/bulin-47-ai',
+  '/glow-stick-ai',
   '/blog',
   '/burning-bridges-ai',
   '/say-it-right-ai',
@@ -44,6 +45,8 @@ const LIMITED_STATIC_PATH_LOCALES: Record<string, readonly string[]> = {
   '/ai-rumpelstiltskin': RUMPEL_SEO_LOCALES,
   // Bulin 47's visible editorial content is not fully localized yet.
   '/bulin-47-ai': [baseLocale],
+  // Glow Stick ships English editorial first.
+  '/glow-stick-ai': [baseLocale],
   // Tiny Desk AI ships English editorial first — do not advertise /ja /ko /es mirrors.
   '/tiny-desk-ai': [baseLocale],
   '/shan-shen-bu': [baseLocale],

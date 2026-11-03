@@ -25,7 +25,8 @@ export function LocaleSelector({
 }) {
   const locale = getLocale();
   const pathname = usePathname();
-  const englishOnlyPage = pathname === '/bulin-47-ai';
+  const englishOnlyPage =
+    pathname === '/bulin-47-ai' || pathname === '/glow-stick-ai';
 
   function handleSwitch(newLocale: string) {
     if (englishOnlyPage && newLocale !== 'en') {

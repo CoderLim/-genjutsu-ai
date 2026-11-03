@@ -7,12 +7,14 @@ export const HOTEL_LOBBY_PRESET_ID = 'hotel-lobby' as const;
 export const CRAZY_FROG_PRESET_ID = 'crazy-frog' as const;
 export const RUMPELSTILTSKIN_PRESET_ID = 'rumpelstiltskin' as const;
 export const BULIN_47_PRESET_ID = 'bulin-47' as const;
+export const GLOW_STICK_PRESET_ID = 'glow-stick' as const;
 
 const DEFAULT_HOTEL_LOBBY_TEMPLATE_KEY = 'hotel-lobby/templates/default.mp4';
 const CRAZY_FROG_TEMPLATE_KEY = 'hotel-lobby/templates/crazy-frog-v1.mp4';
 const RUMPELSTILTSKIN_TEMPLATE_KEY =
   'hotel-lobby/templates/rumpelstiltskin-v1.mp4';
 const BULIN_47_TEMPLATE_KEY = 'hotel-lobby/templates/bulin-47-v1.mp4';
+const GLOW_STICK_TEMPLATE_KEY = 'hotel-lobby/templates/glow-stick-v1.mp4';
 
 function hotelLobbyTemplateVideoKey() {
   return (
@@ -95,6 +97,26 @@ export function buildBulin47Prompt(imageCount: number) {
   ].join(' ');
 }
 
+export function buildGlowStickPrompt(imageCount: number) {
+  if (imageCount !== 3) {
+    throw new HotelLobbyPreflightError(
+      'Glow Stick requires exactly three reference images'
+    );
+  }
+  // Center dancer is the hardest swap (largest motion, strongest original look).
+  // Name the original cues explicitly; soft "preserve" wording leaves her in place.
+  return [
+    'Use @Video1 only for motion, timing, gestures, camera, studio wall, floor, and glow-stick light trails.',
+    'Replace all three dancers — every frame must show @Element1, @Element2, and @Element3, never the original cast.',
+    'Change the center dancer in @Video1 (adult woman in the middle with long dark free-flowing hair, light blue button-down shirt, and light jeans, holding two glow sticks) to be the person or character from @Element2 — do not keep her face, hair, shirt, jeans, or body.',
+    'Change the left dancer in @Video1 (leftmost person holding glow sticks) to be the person or character from @Element1 — do not keep the original left dancer.',
+    'Change the right dancer in @Video1 (rightmost person holding glow sticks) to be the person or character from @Element3 — do not keep the original right dancer.',
+    'Match each Element for face, hair, body, clothing, and species throughout the clip.',
+    'Keep only the glow sticks, light trails, wall, floor reflections, camera path, and sync timing from @Video1.',
+    'Do not leave the original center woman. Do not swap Element1, Element2, and Element3 or blend the three identities.',
+  ].join(' ');
+}
+
 const PRESETS = {
   [HOTEL_LOBBY_PRESET_ID]: {
     id: HOTEL_LOBBY_PRESET_ID,
@@ -172,6 +194,25 @@ const PRESETS = {
     aspectRatio: '9:16',
     enabled: true,
     promptFor: buildBulin47Prompt,
+  },
+  [GLOW_STICK_PRESET_ID]: {
+    id: GLOW_STICK_PRESET_ID,
+    version: 2,
+    displayName: 'Glow Stick',
+    creditDescription: 'Reserve credits for Glow Stick AI generation',
+    templateVideoKey: GLOW_STICK_TEMPLATE_KEY,
+    localTemplatePath: 'public/videos/glow-stick-tpl.mp4',
+    previewUrl: '/api/genjutsu/template?product=glow-stick',
+    posterUrl: '/videos/glow-stick-tpl-poster.jpg',
+    downloadPrefix: 'glow-stick',
+    imageCount: { min: 3, max: 3 },
+    allowCustomVideo: false,
+    allowTrim: false,
+    keepAudio: true,
+    aspectRatio: '9:16',
+    // Migrated to homepage Genjutsu Light (`/glow-stick-ai` → `/api/genjutsu/*`).
+    enabled: false,
+    promptFor: buildGlowStickPrompt,
   },
 } as const satisfies Record<string, HotelLobbyPresetDef>;
 

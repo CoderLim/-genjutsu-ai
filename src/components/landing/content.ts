@@ -699,6 +699,10 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
         href: '/bulin-47-ai',
       },
       {
+        label: 'Glow Stick AI',
+        href: '/glow-stick-ai',
+      },
+      {
         label: 'Hotel Lobby AI',
         href: '/hotel-lobby-ai',
       },

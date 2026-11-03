@@ -87,6 +87,14 @@ const DEFAULT_OBJECTS_RESOLUTION = '480p' as const;
  */
 export const MOTION_TEMPLATES: MotionTemplate[] = [
   {
+    id: 'glow-stick',
+    titleKey: 'site.templates.glow_stick',
+    poster: '/videos/glow-stick-tpl-poster.jpg',
+    sourceVideo: fixedTemplatePreviewPath({ product: 'glow-stick' }),
+    href: '/glow-stick-ai',
+    aspect: 'portrait',
+  },
+  {
     id: 'closing-door-prank',
     titleKey: 'site.templates.closing_door_prank',
     poster: '/videos/closing-door-prank-tpl-poster.jpg',

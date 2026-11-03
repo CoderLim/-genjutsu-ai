@@ -136,6 +136,18 @@ import {
 import { resolveGenjutsuInputUrls } from '@/modules/genjutsu/storage';
 import { isSeedanceFamilyProvider } from '@/modules/genjutsu/workflow';
 import {
+  assertGlowStickAiInputs,
+  GlowStickAiPreflightError,
+} from '@/modules/glow-stick-ai/assert';
+import {
+  GLOW_STICK_AI_ASPECT_RATIO,
+  GLOW_STICK_AI_PRODUCT_ID,
+} from '@/modules/glow-stick-ai/constants';
+import {
+  assertGlowStickAiProviderBinding,
+  GlowStickAiProviderBindingError,
+} from '@/modules/glow-stick-ai/provider';
+import {
   assertSayItRightAiInputs,
   SayItRightAiPreflightError,
 } from '@/modules/say-it-right-ai/assert';
@@ -488,6 +500,15 @@ async function POST({ request }: { request: Request }) {
       assertGasStationDanceAiInputs(taskOptions);
       assertGasStationDanceAiProviderBinding(task.provider, task.model);
     }
+    if (product === GLOW_STICK_AI_PRODUCT_ID) {
+      if (!task) {
+        throw new GlowStickAiPreflightError(
+          'Glow Stick AI generation must start from a saved attempt'
+        );
+      }
+      assertGlowStickAiInputs(taskOptions);
+      assertGlowStickAiProviderBinding(task.provider, task.model);
+    }
     if (product === ZOMBIE_HUG_PRODUCT_ID) {
       if (!task) {
         throw new ZombieHugPreflightError(
@@ -508,6 +529,7 @@ async function POST({ request }: { request: Request }) {
         product === COLDPLAY_KISS_CAM_PRODUCT_ID ||
         product === GANGNAM_STYLE_AI_PRODUCT_ID ||
         product === GAS_STATION_DANCE_AI_PRODUCT_ID ||
+        product === GLOW_STICK_AI_PRODUCT_ID ||
         product === ZOMBIE_HUG_PRODUCT_ID) &&
       task
         ? {
@@ -549,12 +571,14 @@ async function POST({ request }: { request: Request }) {
                             ? GANGNAM_STYLE_AI_ASPECT_RATIO
                             : product === GAS_STATION_DANCE_AI_PRODUCT_ID
                               ? GAS_STATION_DANCE_AI_ASPECT_RATIO
-                              : product === ZOMBIE_HUG_PRODUCT_ID &&
-                                  isZombieHugAspectRatio(
-                                    taskOptions?.aspectRatio
-                                  )
-                                ? taskOptions.aspectRatio
-                                : undefined;
+                              : product === GLOW_STICK_AI_PRODUCT_ID
+                                ? GLOW_STICK_AI_ASPECT_RATIO
+                                : product === ZOMBIE_HUG_PRODUCT_ID &&
+                                    isZombieHugAspectRatio(
+                                      taskOptions?.aspectRatio
+                                    )
+                                  ? taskOptions.aspectRatio
+                                  : undefined;
 
     if (isSeedanceFamilyProvider(target.provider) && !hasStorageInput(input)) {
       throw new Error(
@@ -722,6 +746,8 @@ async function POST({ request }: { request: Request }) {
         error instanceof GangnamStyleAiProviderBindingError ||
         error instanceof GasStationDanceAiPreflightError ||
         error instanceof GasStationDanceAiProviderBindingError ||
+        error instanceof GlowStickAiPreflightError ||
+        error instanceof GlowStickAiProviderBindingError ||
         error instanceof ZombieHugPreflightError ||
         error instanceof ZombieHugProviderBindingError
       ) {

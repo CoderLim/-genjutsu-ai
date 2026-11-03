@@ -19,6 +19,7 @@ const EXTRA_HOTEL_LOBBY_LOGICAL_KEYS = [
   'hotel-lobby/templates/crazy-frog-v1.mp4',
   'hotel-lobby/templates/rumpelstiltskin-v1.mp4',
   'hotel-lobby/templates/bulin-47-v1.mp4',
+  'hotel-lobby/templates/glow-stick-v1.mp4',
 ] as const;
 
 async function main() {

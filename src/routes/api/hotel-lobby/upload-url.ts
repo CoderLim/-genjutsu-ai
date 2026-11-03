@@ -27,10 +27,11 @@ async function POST({ request }: { request: Request }) {
     const body = await request.json().catch(() => ({}));
     const generationId = assertHotelLobbyGenerationId(body.generationId);
     const preset = resolveHotelLobbyPreset(body.presetId);
-    const useDefaultTemplate = body.useDefaultTemplate === true;
-    if (body.preview === true) {
-      return respErr('Paid preview is no longer supported', { status: 400 });
-    }
+    const isPreview = body.preview === true;
+    // Preview always uploads a trimmed clip + images (never server default template).
+    const useDefaultTemplate = isPreview
+      ? false
+      : body.useDefaultTemplate === true;
     const contentTypes = Array.isArray(body.contentTypes)
       ? body.contentTypes.filter(
           (value: unknown): value is string => typeof value === 'string'
@@ -40,7 +41,13 @@ async function POST({ request }: { request: Request }) {
       ? body.contentLengths.map((value: unknown) => Number(value))
       : [];
 
-    if (!preset.allowCustomVideo && !useDefaultTemplate) {
+    if (isPreview && body.useDefaultTemplate === true) {
+      return respErr('Paid preview must upload a trimmed template clip', {
+        status: 400,
+      });
+    }
+
+    if (!isPreview && !preset.allowCustomVideo && !useDefaultTemplate) {
       return respErr(
         `${preset.displayName} only supports the fixed reference template`,
         { status: 400 }

@@ -56,6 +56,12 @@ import {
   isGenjutsuProductId,
   resolveProductProviderTarget,
 } from '@/modules/genjutsu/workflow';
+import { isAllowedGlowStickAiPrompt } from '@/modules/glow-stick-ai/assert';
+import {
+  GLOW_STICK_AI_MODE,
+  GLOW_STICK_AI_PRODUCT_ID,
+  GLOW_STICK_AI_RESOLUTIONS,
+} from '@/modules/glow-stick-ai/constants';
 import { isAllowedSayItRightAiPrompt } from '@/modules/say-it-right-ai/assert';
 import {
   SAY_IT_RIGHT_AI_MODE,
@@ -374,6 +380,31 @@ async function POST({ request }: { request: Request }) {
     if (isGasStationDanceAi && !isAllowedGasStationDanceAiPrompt(prompt)) {
       return respErr(
         'Gas Station Dance AI prompt does not match the fixed product prompt',
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const isGlowStickAi = product === GLOW_STICK_AI_PRODUCT_ID;
+    if (isGlowStickAi && mode !== GLOW_STICK_AI_MODE) {
+      return respErr('Glow Stick AI only supports objects-swap', {
+        status: 400,
+      });
+    }
+    if (
+      isGlowStickAi &&
+      !GLOW_STICK_AI_RESOLUTIONS.includes(
+        resolution as (typeof GLOW_STICK_AI_RESOLUTIONS)[number]
+      )
+    ) {
+      return respErr('Glow Stick AI only supports 480p and 720p', {
+        status: 400,
+      });
+    }
+    if (isGlowStickAi && !isAllowedGlowStickAiPrompt(prompt)) {
+      return respErr(
+        'Glow Stick AI prompt does not match the fixed product prompt',
         {
           status: 400,
         }

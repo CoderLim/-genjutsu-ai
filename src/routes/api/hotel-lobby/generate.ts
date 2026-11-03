@@ -16,6 +16,7 @@ import {
 } from '@/modules/hotel-lobby/billing';
 import { resolveHotelLobbyPreset } from '@/modules/hotel-lobby/presets';
 import {
+  assertHotelLobbyPreviewDuration,
   estimateHotelLobbyCredits,
   estimateHotelLobbyProviderCost,
   HOTEL_LOBBY_BILLING_RESOLUTION,
@@ -67,12 +68,19 @@ async function POST({ request }: { request: Request }) {
     generationId = assertHotelLobbyGenerationId(body.generationId);
 
     const preset = resolveHotelLobbyPreset(body.presetId);
-    const useDefaultTemplate = body.useDefaultTemplate === true;
-    if (body.preview === true) {
-      return respErr('Paid preview is no longer supported', { status: 400 });
+    const isPreview = body.preview === true;
+    // Preview always uploads a trimmed clip (never server default template).
+    const useDefaultTemplate = isPreview
+      ? false
+      : body.useDefaultTemplate === true;
+
+    if (isPreview && body.useDefaultTemplate === true) {
+      return respErr('Paid preview must upload a trimmed template clip', {
+        status: 400,
+      });
     }
 
-    if (!preset.allowCustomVideo) {
+    if (!isPreview && !preset.allowCustomVideo) {
       if (!useDefaultTemplate) {
         return respErr(
           `${preset.displayName} only supports the fixed reference template`,
@@ -167,6 +175,18 @@ async function POST({ request }: { request: Request }) {
               : undefined,
           }
     );
+    if (isPreview) {
+      try {
+        assertHotelLobbyPreviewDuration(duration);
+      } catch (error) {
+        return respErr(
+          error instanceof Error
+            ? error.message
+            : 'Paid preview duration is invalid',
+          { status: 400 }
+        );
+      }
+    }
     // Kling O3 rejects out-of-range pixels; fail before credit reservation.
     await probeHotelLobbyVideoDimensions(providerInput.videoUrl);
 

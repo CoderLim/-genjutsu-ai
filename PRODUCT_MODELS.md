@@ -36,23 +36,24 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 
 ## A. Genjutsu 链（`/api/genjutsu/*`）
 
-| 路径                                  | product id             | mode            | 解析             | 生产 provider        | 生产 model                                       |
-| ------------------------------------- | ---------------------- | --------------- | ---------------- | -------------------- | ------------------------------------------------ |
-| `/`（首页）                           | —                      | motion-transfer | mode env         | `higgsfield`         | `higgsfield/genjutsu-light/motion-transfer/v1.0` |
-| `/`（首页）                           | —                      | objects-swap    | mode env         | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
-| `/crazy-frog-ai`                      | `crazy-frog`           | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/smalltown-boy-dance`                | `smalltown-boy-dance`  | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/a2o-lite-ai`                        | `a2o-lite-ai`          | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/enzo-fernandez-ai`                  | `enzo-fernandez-ai`    | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/flying-car-ai`                      | `flying-car-ai`        | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/coldplay-kiss-cam`                  | `coldplay-kiss-cam`    | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/gangnam-style-ai`                   | `gangnam-style-ai`     | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/gas-station-dance-ai`               | `gas-station-dance-ai` | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/burning-bridges-ai`                 | `burning-bridges-ai`   | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/say-it-right-ai`                    | `say-it-right-ai`      | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/ai-zombie-hug`                      | `zombie-hug`           | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/tiny-desk-ai`                       | `tiny-desk-ai`         | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/shan-shen-bu`（`/shanshenbu` 别名） | `shan-shen-bu`         | objects-swap    | product override | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| 路径                                  | product id             | mode            | 解析                              | 生产 provider        | 生产 model                                       |
+| ------------------------------------- | ---------------------- | --------------- | --------------------------------- | -------------------- | ------------------------------------------------ |
+| `/`（首页）                           | —                      | motion-transfer | mode env                          | `higgsfield`         | `higgsfield/genjutsu-light/motion-transfer/v1.0` |
+| `/`（首页）                           | —                      | objects-swap    | mode env                          | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
+| `/crazy-frog-ai`                      | `crazy-frog`           | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/smalltown-boy-dance`                | `smalltown-boy-dance`  | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/a2o-lite-ai`                        | `a2o-lite-ai`          | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/enzo-fernandez-ai`                  | `enzo-fernandez-ai`    | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/flying-car-ai`                      | `flying-car-ai`        | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/coldplay-kiss-cam`                  | `coldplay-kiss-cam`    | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/gangnam-style-ai`                   | `gangnam-style-ai`     | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/gas-station-dance-ai`               | `gas-station-dance-ai` | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/glow-stick-ai`                      | `glow-stick`           | objects-swap    | mode env（忽略 PRODUCT_PROVIDER） | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
+| `/burning-bridges-ai`                 | `burning-bridges-ai`   | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/say-it-right-ai`                    | `say-it-right-ai`      | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/ai-zombie-hug`                      | `zombie-hug`           | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/tiny-desk-ai`                       | `tiny-desk-ai`         | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/shan-shen-bu`（`/shanshenbu` 别名） | `shan-shen-bu`         | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
 
 计费：首页走 Genjutsu（`higgsfield`）estimate / list；内页走 Seedance / WaveSpeed 报价。不为 Light 单独拆价。
 

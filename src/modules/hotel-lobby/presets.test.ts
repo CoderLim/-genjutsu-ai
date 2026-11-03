@@ -4,10 +4,12 @@ import test from 'node:test';
 import {
   buildBulin47Prompt,
   buildCrazyFrogPrompt,
+  buildGlowStickPrompt,
   buildRumpelstiltskinPrompt,
   BULIN_47_PRESET_ID,
   CRAZY_FROG_PRESET_ID,
   getHotelLobbyPresetPublicMeta,
+  GLOW_STICK_PRESET_ID,
   HOTEL_LOBBY_PRESET_ID,
   isHotelLobbyPresetId,
   normalizeStoredPresetId,
@@ -72,12 +74,38 @@ test('bulin-47 preset is fixed template, one image, portrait', () => {
   assert.match(preset.templateVideoKey, /bulin-47-v1\.mp4$/);
 });
 
+test('glow-stick preset is fixed template, three images, portrait (legacy disabled)', () => {
+  const preset = resolveHotelLobbyPreset(GLOW_STICK_PRESET_ID, {
+    requireEnabled: false,
+  });
+  assert.equal(preset.id, GLOW_STICK_PRESET_ID);
+  assert.equal(preset.enabled, false);
+  assert.equal(preset.imageCount.min, 3);
+  assert.equal(preset.imageCount.max, 3);
+  assert.equal(preset.allowCustomVideo, false);
+  assert.equal(preset.allowTrim, false);
+  assert.equal(preset.keepAudio, true);
+  assert.equal(preset.aspectRatio, '9:16');
+  assert.equal(preset.previewUrl, '/api/genjutsu/template?product=glow-stick');
+  assert.equal(preset.downloadPrefix, 'glow-stick');
+  assert.match(preset.templateVideoKey, /glow-stick-v1\.mp4$/);
+  assert.equal(preset.localTemplatePath, 'public/videos/glow-stick-tpl.mp4');
+});
+
+test('disabled glow-stick rejects when requireEnabled (migrated to genjutsu)', () => {
+  assert.throws(
+    () => resolveHotelLobbyPreset(GLOW_STICK_PRESET_ID),
+    /not available|disabled|Glow Stick/i
+  );
+});
+
 test('all hotel-lobby presets keep audio by default', () => {
   for (const id of [
     HOTEL_LOBBY_PRESET_ID,
     CRAZY_FROG_PRESET_ID,
     RUMPELSTILTSKIN_PRESET_ID,
     BULIN_47_PRESET_ID,
+    GLOW_STICK_PRESET_ID,
   ] as const) {
     assert.equal(
       resolveHotelLobbyPreset(id, { requireEnabled: false }).keepAudio,
@@ -111,6 +139,7 @@ test('isHotelLobbyPresetId derives from registry', () => {
   assert.equal(isHotelLobbyPresetId('crazy-frog'), true);
   assert.equal(isHotelLobbyPresetId('rumpelstiltskin'), true);
   assert.equal(isHotelLobbyPresetId('bulin-47'), true);
+  assert.equal(isHotelLobbyPresetId('glow-stick'), true);
   assert.equal(isHotelLobbyPresetId('zombie-hug'), false);
 });
 
@@ -144,6 +173,23 @@ test('bulin-47 prompt is single-Element Kling style', () => {
   assert.match(prompt, /do not keep the original performer/i);
   assert.doesNotMatch(prompt, /@Image1/);
   assert.throws(() => buildBulin47Prompt(0), HotelLobbyPreflightError);
+});
+
+test('glow-stick prompt names three Elements and hard-replaces center cues', () => {
+  const prompt = buildGlowStickPrompt(3);
+  assert.match(prompt, /@Video1/);
+  assert.match(prompt, /@Element1/);
+  assert.match(prompt, /@Element2/);
+  assert.match(prompt, /@Element3/);
+  assert.match(prompt, /left dancer/i);
+  assert.match(prompt, /center dancer/i);
+  assert.match(prompt, /right dancer/i);
+  assert.match(prompt, /light blue button-down|blue button-down/i);
+  assert.match(prompt, /@Element2/);
+  assert.match(prompt, /do not keep her face/i);
+  assert.match(prompt, /Do not leave the original center woman/i);
+  assert.match(prompt, /Do not swap Element1, Element2, and Element3/i);
+  assert.throws(() => buildGlowStickPrompt(2), HotelLobbyPreflightError);
 });
 
 test('public meta includes UI fields', () => {
