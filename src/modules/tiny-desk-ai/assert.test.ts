@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildSeedanceWorkflowPrompt } from '@/modules/genjutsu/workflow';
-
 import {
   assertTinyDeskAiInputs,
   isAllowedTinyDeskAiPrompt,
@@ -34,65 +32,61 @@ function optionsForCount(count: number) {
   };
 }
 
-const PERSON_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
-
 test('accepts 1–5 contiguous cast sizes with matching prompts', () => {
   for (const count of [1, 2, 3, 4, 5] as const) {
     assert.doesNotThrow(() => assertTinyDeskAiInputs(optionsForCount(count)));
   }
 });
 
-test('maps @Image1–@Image5 to Person A–E in order for each cast size', () => {
+test('maps @Image1–@Image5 in upload order for each cast size', () => {
   for (const count of [1, 2, 3, 4, 5] as const) {
     const prompt = buildTinyDeskAiPrompt(count);
     for (let i = 0; i < count; i += 1) {
-      const letter = PERSON_LETTERS[i]!;
-      const image = `@Image${i + 1}`;
-      assert.match(
-        prompt,
-        new RegExp(`Replace Person ${letter} with ${image}\\.`)
-      );
-      assert.match(
-        prompt,
-        new RegExp(
-          `Use ${image} as the exclusive identity and appearance reference for Person ${letter}\\.`
-        )
-      );
+      assert.match(prompt, new RegExp(`→ @Image${i + 1}`));
     }
-    // Unassigned images must not appear.
     for (let i = count; i < 5; i += 1) {
       assert.doesNotMatch(prompt, new RegExp(`@Image${i + 1}\\b`));
-      assert.doesNotMatch(
-        prompt,
-        new RegExp(`Replace Person ${PERSON_LETTERS[i]} with`)
-      );
     }
   }
 });
 
-test('protects unassigned performers without conflicting replace rules', () => {
-  const solo = buildTinyDeskAiPrompt(1);
-  assert.match(solo, /Do NOT replace anyone else:/);
-  assert.match(solo, /Person B \(backing left\)/);
-  assert.match(solo, /Person E \(saxophone\)/);
+test('five-person Light prompt matches the homepage-safe wording', () => {
+  const prompt = buildTinyDeskAiPrompt(5);
   assert.match(
-    solo,
-    /Keep all performers without assigned reference images unchanged\./
+    prompt,
+    /Replace these performers with the reference images \(one-to-one\):/
   );
-  // Person A is replaced — must not also appear under the keep list.
-  const keepSection = solo.slice(solo.indexOf('Do NOT replace anyone else:'));
-  assert.doesNotMatch(keepSection, /Person A \(lead singer\)/);
-  assert.doesNotMatch(keepSection, /Replace Person A with/);
+  assert.match(
+    prompt,
+    /Center lead at red keyboard \(brown hair, black suit, thin black tie\) → @Image1/
+  );
+  assert.match(
+    prompt,
+    /Backing left \(shaved head, navy suit, blue patterned tie\) → @Image2/
+  );
+  assert.match(
+    prompt,
+    /Backing right \(shaved head, grey pinstripe, often sunglasses\) → @Image3/
+  );
+  assert.match(
+    prompt,
+    /Silver-haired close-up vocalist \(windowpane jacket, striped tie\) → @Image4 — different from the center lead/
+  );
+  assert.match(prompt, /Sax player \(glasses, red-black scarf\) → @Image5/);
+  assert.match(
+    prompt,
+    /Keep mapping across cuts\. Do not merge identities\. Keep desk, band motion, camera, and lighting\./
+  );
+  assert.doesNotMatch(prompt, /Leave other performers unchanged\./);
+  assert.ok(prompt.length <= 2000, `prompt length ${prompt.length}`);
+});
 
-  const full = buildTinyDeskAiPrompt(5);
-  assert.doesNotMatch(full, /Do NOT replace anyone else:/);
-  assert.doesNotMatch(
-    full,
-    /Keep all performers without assigned reference images unchanged\./
-  );
-  for (const letter of PERSON_LETTERS) {
-    assert.match(full, new RegExp(`Replace Person ${letter} with @Image`));
-  }
+test('partial casts ask Light to leave other performers unchanged', () => {
+  const solo = buildTinyDeskAiPrompt(1);
+  assert.match(solo, /Leave other performers unchanged\./);
+  assert.match(solo, /→ @Image1/);
+  assert.doesNotMatch(solo, /@Image2\b/);
+  assert.ok(solo.length <= 2000);
 });
 
 test('new prompts pass server allowlist and cast-size check', () => {
@@ -106,6 +100,7 @@ test('new prompts pass server allowlist and cast-size check', () => {
 test('existing silver-hair legacy solo prompt still validates for 1 image', () => {
   const legacy = LEGACY_TINY_DESK_AI_PROMPTS[0]!;
   assert.equal(isAllowedTinyDeskAiPrompt(legacy), true);
+  assert.ok(legacy.length <= 2000);
   assert.doesNotThrow(() =>
     assertTinyDeskAiInputs({
       ...optionsForCount(1),
@@ -197,25 +192,5 @@ test('rejects motion-transfer mode, wrong aspect, and wrong resolution', () => {
         resolution: '1080p',
       }),
     TinyDeskAiPreflightError
-  );
-});
-
-test('five-person task instruction nests cleanly under Seedance workflow prompt', () => {
-  const task = buildTinyDeskAiPrompt(5);
-  const full = buildSeedanceWorkflowPrompt({
-    mode: 'objects-swap',
-    userPrompt: task,
-    imageCount: 5,
-  });
-  assert.match(full, /TASK INSTRUCTION:/);
-  assert.match(full, /OBJECT SWAP:/);
-  assert.match(full, /REFERENCE IDENTITY:/);
-  assert.match(full, /Reference 1 = @Image1/);
-  assert.match(full, /Reference 5 = @Image5/);
-  assert.match(full, /Replace Person A with @Image1\./);
-  assert.match(full, /Replace Person E with @Image5\./);
-  assert.match(
-    full,
-    /Person A \(center keyboard lead\) and Person D \(silver-haired close-up vocalist\)/
   );
 });

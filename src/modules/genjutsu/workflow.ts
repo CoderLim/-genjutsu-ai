@@ -163,8 +163,8 @@ export function resolveProductProviderTarget(
   product: string | null | undefined,
   mode: GenjutsuMode
 ): GenjutsuProviderTarget {
-  // Glow Stick tracks homepage Genjutsu Light (ignore PRODUCT_PROVIDER).
-  if (product === GLOW_STICK_PRODUCT) {
+  // Glow Stick / Tiny Desk track homepage Genjutsu Light (ignore PRODUCT_PROVIDER).
+  if (product === GLOW_STICK_PRODUCT || product === TINY_DESK_AI_PRODUCT) {
     return resolveGenjutsuProviderTarget(mode);
   }
 

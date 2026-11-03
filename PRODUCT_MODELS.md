@@ -32,7 +32,7 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 - motion-transfer → `bytedance/seedance-2.5/motion-control`
 - objects-swap → `bytedance/seedance-2.5/video-edit`
 
-多数带 Seedance assert 的产品页在 generate 时要求 Seedance family；因此内页必须留在 `seedance-*`，不能只靠首页切 Light。
+多数带 Seedance assert 的产品页在 generate 时要求 Seedance family；因此那些内页必须留在 `seedance-*`，不能只靠首页切 Light。例外：`glow-stick` / `tiny-desk-ai` 已锁定 homepage Genjutsu Light（忽略 `GENJUTSU_PRODUCT_PROVIDER`）。
 
 ## A. Genjutsu 链（`/api/genjutsu/*`）
 
@@ -52,7 +52,7 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 | `/burning-bridges-ai`                 | `burning-bridges-ai`   | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
 | `/say-it-right-ai`                    | `say-it-right-ai`      | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
 | `/ai-zombie-hug`                      | `zombie-hug`           | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/tiny-desk-ai`                       | `tiny-desk-ai`         | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
+| `/tiny-desk-ai`                       | `tiny-desk-ai`         | objects-swap    | mode env（忽略 PRODUCT_PROVIDER） | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
 | `/shan-shen-bu`（`/shanshenbu` 别名） | `shan-shen-bu`         | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
 
 计费：首页走 Genjutsu（`higgsfield`）estimate / list；内页走 Seedance / WaveSpeed 报价。不为 Light 单独拆价。

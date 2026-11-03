@@ -24,7 +24,7 @@ test('Tiny Desk SEO glance prices use Creator pack rate and whole dollars', () =
   const amounts = getTinyDeskAiSeoPriceAmounts();
   assert.equal(amounts.starterPrice, '$4.99');
   assert.equal(amounts.creatorPrice, '$9.99');
-  // Creator rate: 810× ≈ $9.52 → $10; 1737× ≈ $20.41 → $20.
+  // Homepage Light list rate at Creator pack: ~811× → $10; ~1737× → $20.
   assert.equal(amounts.usd480, '$10');
   assert.equal(amounts.usd720, '$20');
 });

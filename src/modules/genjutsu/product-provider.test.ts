@@ -111,6 +111,15 @@ test('glow-stick follows homepage objects-swap (ignores product provider)', () =
   assert.deepEqual(target, fallback);
 });
 
+test('tiny-desk-ai follows homepage objects-swap (ignores product provider)', () => {
+  const fallback = resolveGenjutsuProviderTarget('objects-swap');
+  const target = resolveProductProviderTarget(
+    TINY_DESK_AI_PRODUCT,
+    'objects-swap'
+  );
+  assert.deepEqual(target, fallback);
+});
+
 test('burning-bridges-ai follows the mode env router', () => {
   const fallback = resolveGenjutsuProviderTarget('objects-swap');
   const target = resolveProductProviderTarget(

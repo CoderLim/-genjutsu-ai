@@ -1,13 +1,5 @@
-import type {
-  GenjutsuProvider,
-  GenjutsuProviderTarget,
-} from '@/modules/genjutsu/types';
-import {
-  isSeedanceFamilyProvider,
-  resolveObjectsSwapTargetForProvider,
-  resolveProductProviderTarget,
-  TINY_DESK_AI_PRODUCT,
-} from '@/modules/genjutsu/workflow';
+import type { GenjutsuProviderTarget } from '@/modules/genjutsu/types';
+import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
 
 import { TINY_DESK_AI_MODE } from './constants';
 
@@ -19,17 +11,16 @@ export class TinyDeskAiProviderBindingError extends Error {
 }
 
 /**
- * Same router as Enzo / Crazy Frog / Gas Station:
- * `GENJUTSU_OBJECT_SWAP_PROVIDER` (homepage objects-swap), optionally overridden
- * by `GENJUTSU_PRODUCT_PROVIDER` for allowlisted product pages.
+ * Homepage Genjutsu Light parity: ignore `GENJUTSU_PRODUCT_PROVIDER` and follow
+ * `GENJUTSU_OBJECT_SWAP_PROVIDER` (production: higgsfield / genjutsu-light).
  */
 export function resolveTinyDeskAiProviderTarget(): GenjutsuProviderTarget {
-  return resolveProductProviderTarget(TINY_DESK_AI_PRODUCT, TINY_DESK_AI_MODE);
+  return resolveGenjutsuProviderTarget(TINY_DESK_AI_MODE);
 }
 
 /**
  * Persisted attempts keep the provider/model they were created with.
- * Accept any Seedance-family objects-swap pair for that provider.
+ * Tiny Desk must stay on the homepage objects-swap target (Higgs Light).
  */
 export function assertTinyDeskAiProviderBinding(
   provider: unknown,
@@ -45,17 +36,10 @@ export function assertTinyDeskAiProviderBinding(
       'Tiny Desk AI task is missing a provider/model binding'
     );
   }
-  if (!isSeedanceFamilyProvider(provider)) {
+  const expected = resolveGenjutsuProviderTarget(TINY_DESK_AI_MODE);
+  if (provider !== expected.provider || model !== expected.model) {
     throw new TinyDeskAiProviderBindingError(
-      'Tiny Desk AI requires a Seedance family provider'
-    );
-  }
-  const expected = resolveObjectsSwapTargetForProvider(
-    provider as GenjutsuProvider
-  );
-  if (model !== expected.model) {
-    throw new TinyDeskAiProviderBindingError(
-      'Tiny Desk AI task model does not match the Seedance objects-swap target for its provider'
+      `Tiny Desk AI requires homepage objects-swap provider/model (${expected.provider} / ${expected.model})`
     );
   }
 }

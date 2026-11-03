@@ -2,14 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { envConfigs } from '@/config';
-import {
-  CRAZY_FROG_PRODUCT,
-  higgsfieldSeedanceObjectsSwapTarget,
-  resolveGenjutsuProviderTarget,
-  resolveProductProviderTarget,
-  SMALLTOWN_BOY_DANCE_PRODUCT,
-} from '@/modules/genjutsu/workflow';
+import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
 
+import { TINY_DESK_AI_MODE } from './constants';
 import {
   assertTinyDeskAiProviderBinding,
   resolveTinyDeskAiProviderTarget,
@@ -24,89 +19,57 @@ function restore() {
   envConfigs.genjutsu_object_swap_provider = originalObjectSwap;
 }
 
-test('Tiny Desk follows the shared objects-swap env router', () => {
-  envConfigs.genjutsu_product_provider = '';
-  envConfigs.genjutsu_object_swap_provider = 'seedance-wavespeed';
+test('Tiny Desk resolves to homepage objects-swap target', () => {
+  envConfigs.genjutsu_object_swap_provider = 'higgsfield';
+  envConfigs.genjutsu_product_provider = 'seedance-wavespeed';
   try {
-    const expected = resolveGenjutsuProviderTarget('objects-swap');
-    assert.deepEqual(resolveTinyDeskAiProviderTarget(), expected);
-    assert.equal(
-      resolveTinyDeskAiProviderTarget().provider,
-      'seedance-wavespeed'
-    );
-    assert.equal(
-      resolveTinyDeskAiProviderTarget().model,
-      'bytedance/seedance-2.5/video-edit'
-    );
+    const target = resolveTinyDeskAiProviderTarget();
+    const homepage = resolveGenjutsuProviderTarget(TINY_DESK_AI_MODE);
+    assert.deepEqual(target, homepage);
+    assert.equal(target.provider, 'higgsfield');
   } finally {
     restore();
   }
 });
 
-test('GENJUTSU_PRODUCT_PROVIDER overrides Tiny Desk like Crazy Frog / Smalltown', () => {
-  envConfigs.genjutsu_object_swap_provider = 'seedance-wavespeed';
+test('GENJUTSU_PRODUCT_PROVIDER does not override Tiny Desk', () => {
+  envConfigs.genjutsu_object_swap_provider = 'higgsfield';
   envConfigs.genjutsu_product_provider = 'seedance-higgsfield';
   try {
     assert.deepEqual(
       resolveTinyDeskAiProviderTarget(),
-      higgsfieldSeedanceObjectsSwapTarget()
+      resolveGenjutsuProviderTarget(TINY_DESK_AI_MODE)
     );
-    assert.deepEqual(
-      resolveTinyDeskAiProviderTarget(),
-      resolveProductProviderTarget(CRAZY_FROG_PRODUCT, 'objects-swap')
+    assert.notEqual(
+      resolveTinyDeskAiProviderTarget().provider,
+      'seedance-higgsfield'
     );
   } finally {
     restore();
   }
 });
 
-test('Tiny Desk tracks Crazy Frog and Smalltown under the same product override', () => {
-  envConfigs.genjutsu_product_provider = 'seedance-wavespeed';
-  try {
-    const tinyDesk = resolveTinyDeskAiProviderTarget();
-    const crazy = resolveProductProviderTarget(
-      CRAZY_FROG_PRODUCT,
-      'objects-swap'
-    );
-    const smalltown = resolveProductProviderTarget(
-      SMALLTOWN_BOY_DANCE_PRODUCT,
-      'objects-swap'
-    );
-    assert.deepEqual(tinyDesk, crazy);
-    assert.deepEqual(tinyDesk, smalltown);
-    assert.equal(tinyDesk.provider, 'seedance-wavespeed');
-  } finally {
-    restore();
-  }
-});
-
-test('persisted Seedance-family bindings stay valid across env switches', () => {
-  envConfigs.genjutsu_object_swap_provider = 'seedance-wavespeed';
+test('Tiny Desk provider binding accepts homepage target only', () => {
+  envConfigs.genjutsu_object_swap_provider = 'higgsfield';
   envConfigs.genjutsu_product_provider = '';
   try {
-    const higgsfield = higgsfieldSeedanceObjectsSwapTarget();
+    const expected = resolveTinyDeskAiProviderTarget();
     assert.doesNotThrow(() =>
-      assertTinyDeskAiProviderBinding(higgsfield.provider, higgsfield.model)
-    );
-    assert.doesNotThrow(() =>
-      assertTinyDeskAiProviderBinding(
-        'seedance-wavespeed',
-        'bytedance/seedance-2.5/video-edit'
-      )
+      assertTinyDeskAiProviderBinding(expected.provider, expected.model)
     );
     assert.throws(
       () =>
         assertTinyDeskAiProviderBinding(
-          'seedance-higgsfield',
-          'higgsfield/genjutsu/object-swap/v1.0'
+          'seedance-wavespeed',
+          'bytedance/seedance-2.5/video-edit'
         ),
       TinyDeskAiProviderBindingError
     );
     assert.throws(
       () =>
         assertTinyDeskAiProviderBinding(
-          'higgsfield',
-          'higgsfield/genjutsu/object-swap/v1.0'
+          'seedance-higgsfield',
+          'bytedance/seedance-2.5/reference-to-video'
         ),
       TinyDeskAiProviderBindingError
     );
