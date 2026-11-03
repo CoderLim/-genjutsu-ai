@@ -89,8 +89,9 @@ export function Hero({ className }: { className?: string }) {
         className
       )}
     >
+      {/* Pin media to the first viewport only — Hero grows with the generator. */}
       <div
-        className="pointer-events-none absolute inset-0 overflow-hidden"
+        className="pointer-events-none absolute inset-x-0 top-0 h-svh overflow-hidden"
         aria-hidden
       >
         <div
