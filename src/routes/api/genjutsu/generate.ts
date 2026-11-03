@@ -26,6 +26,18 @@ import {
   BurningBridgesAiProviderBindingError,
 } from '@/modules/burning-bridges-ai/provider';
 import {
+  assertChipmunksDanceInputs,
+  ChipmunksDancePreflightError,
+} from '@/modules/chipmunks-dance/assert';
+import {
+  CHIPMUNKS_DANCE_ASPECT_RATIO,
+  CHIPMUNKS_DANCE_PRODUCT_ID,
+} from '@/modules/chipmunks-dance/constants';
+import {
+  assertChipmunksDanceProviderBinding,
+  ChipmunksDanceProviderBindingError,
+} from '@/modules/chipmunks-dance/provider';
+import {
   assertColdplayKissCamInputs,
   ColdplayKissCamPreflightError,
 } from '@/modules/coldplay-kiss-cam/assert';
@@ -509,6 +521,15 @@ async function POST({ request }: { request: Request }) {
       assertGlowStickAiInputs(taskOptions);
       assertGlowStickAiProviderBinding(task.provider, task.model);
     }
+    if (product === CHIPMUNKS_DANCE_PRODUCT_ID) {
+      if (!task) {
+        throw new ChipmunksDancePreflightError(
+          'Chipmunks Dance generation must start from a saved attempt'
+        );
+      }
+      assertChipmunksDanceInputs(taskOptions);
+      assertChipmunksDanceProviderBinding(task.provider, task.model);
+    }
     if (product === ZOMBIE_HUG_PRODUCT_ID) {
       if (!task) {
         throw new ZombieHugPreflightError(
@@ -530,6 +551,7 @@ async function POST({ request }: { request: Request }) {
         product === GANGNAM_STYLE_AI_PRODUCT_ID ||
         product === GAS_STATION_DANCE_AI_PRODUCT_ID ||
         product === GLOW_STICK_AI_PRODUCT_ID ||
+        product === CHIPMUNKS_DANCE_PRODUCT_ID ||
         product === ZOMBIE_HUG_PRODUCT_ID) &&
       task
         ? {
@@ -573,12 +595,14 @@ async function POST({ request }: { request: Request }) {
                               ? GAS_STATION_DANCE_AI_ASPECT_RATIO
                               : product === GLOW_STICK_AI_PRODUCT_ID
                                 ? GLOW_STICK_AI_ASPECT_RATIO
-                                : product === ZOMBIE_HUG_PRODUCT_ID &&
-                                    isZombieHugAspectRatio(
-                                      taskOptions?.aspectRatio
-                                    )
-                                  ? taskOptions.aspectRatio
-                                  : undefined;
+                                : product === CHIPMUNKS_DANCE_PRODUCT_ID
+                                  ? CHIPMUNKS_DANCE_ASPECT_RATIO
+                                  : product === ZOMBIE_HUG_PRODUCT_ID &&
+                                      isZombieHugAspectRatio(
+                                        taskOptions?.aspectRatio
+                                      )
+                                    ? taskOptions.aspectRatio
+                                    : undefined;
 
     if (isSeedanceFamilyProvider(target.provider) && !hasStorageInput(input)) {
       throw new Error(
@@ -748,6 +772,8 @@ async function POST({ request }: { request: Request }) {
         error instanceof GasStationDanceAiProviderBindingError ||
         error instanceof GlowStickAiPreflightError ||
         error instanceof GlowStickAiProviderBindingError ||
+        error instanceof ChipmunksDancePreflightError ||
+        error instanceof ChipmunksDanceProviderBindingError ||
         error instanceof ZombieHugPreflightError ||
         error instanceof ZombieHugProviderBindingError
       ) {

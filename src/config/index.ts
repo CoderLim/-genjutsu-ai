@@ -253,6 +253,11 @@ export const envConfigs: Record<string, string> = {
     procEnv.GLOW_STICK_AI_TEMPLATE_VIDEO_KEY ??
     'genjutsu/templates/glow-stick-v1.mp4',
 
+  // Chipmunks Dance (server-only). Homepage Genjutsu Light objects-swap; three images.
+  chipmunks_dance_template_video_key:
+    procEnv.CHIPMUNKS_DANCE_TEMPLATE_VIDEO_KEY ??
+    'genjutsu/templates/chipmunks-dance-v1.mp4',
+
   // Burning Bridges AI (server-only). Fixed R2 template; client uploads one image.
   burning_bridges_ai_template_video_key:
     procEnv.BURNING_BRIDGES_AI_TEMPLATE_VIDEO_KEY ??

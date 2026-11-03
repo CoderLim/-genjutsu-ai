@@ -28,6 +28,12 @@ const STATIC_PAGES: { path: string; title: string; description: string }[] = [
     description: 'Three-photo glow-stick sync dance AI video generator',
   },
   {
+    path: '/chipmunks-dance',
+    title: 'Chipmunks Dance',
+    description:
+      '2026 guide to the three-person Chipmunks Dance TikTok trend, steps, song, costumes, and three-photo AI video',
+  },
+  {
     path: '/kairo-bad-times',
     title: 'Kairo Bad Times AI Video',
     description: 'One-photo Kairo Bad Times motion-template AI video generator',

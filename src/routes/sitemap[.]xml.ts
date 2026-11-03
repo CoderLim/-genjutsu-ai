@@ -32,6 +32,7 @@ const STATIC_PATHS = [
   '/ai-rumpelstiltskin',
   '/bulin-47-ai',
   '/glow-stick-ai',
+  '/chipmunks-dance',
   '/blog',
   '/burning-bridges-ai',
   '/say-it-right-ai',
@@ -47,6 +48,8 @@ const LIMITED_STATIC_PATH_LOCALES: Record<string, readonly string[]> = {
   '/bulin-47-ai': [baseLocale],
   // Glow Stick ships English editorial first.
   '/glow-stick-ai': [baseLocale],
+  // Chipmunks Dance ships English editorial first.
+  '/chipmunks-dance': [baseLocale],
   // Tiny Desk AI ships English editorial first — do not advertise /ja /ko /es mirrors.
   '/tiny-desk-ai': [baseLocale],
   '/shan-shen-bu': [baseLocale],

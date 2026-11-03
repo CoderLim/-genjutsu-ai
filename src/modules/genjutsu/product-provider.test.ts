@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   A2O_LITE_AI_PRODUCT,
   BURNING_BRIDGES_AI_PRODUCT,
+  CHIPMUNKS_DANCE_PRODUCT,
   COLDPLAY_KISS_CAM_PRODUCT,
   CRAZY_FROG_PRODUCT,
   ENZO_FERNANDEZ_AI_PRODUCT,
@@ -111,6 +112,15 @@ test('glow-stick follows homepage objects-swap (ignores product provider)', () =
   assert.deepEqual(target, fallback);
 });
 
+test('chipmunks-dance follows homepage objects-swap (ignores product provider)', () => {
+  const fallback = resolveGenjutsuProviderTarget('objects-swap');
+  const target = resolveProductProviderTarget(
+    CHIPMUNKS_DANCE_PRODUCT,
+    'objects-swap'
+  );
+  assert.deepEqual(target, fallback);
+});
+
 test('tiny-desk-ai follows homepage objects-swap (ignores product provider)', () => {
   const fallback = resolveGenjutsuProviderTarget('objects-swap');
   const target = resolveProductProviderTarget(
@@ -179,6 +189,7 @@ test('isGenjutsuProductId allowlist', () => {
   assert.equal(isGenjutsuProductId(GANGNAM_STYLE_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(GAS_STATION_DANCE_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(GLOW_STICK_PRODUCT), true);
+  assert.equal(isGenjutsuProductId(CHIPMUNKS_DANCE_PRODUCT), true);
   assert.equal(isGenjutsuProductId(BURNING_BRIDGES_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(SAY_IT_RIGHT_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(ZOMBIE_HUG_PRODUCT), true);

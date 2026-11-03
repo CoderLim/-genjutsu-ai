@@ -31,23 +31,96 @@ const NAV_LINKS = [
 ] as const;
 
 const TRENDING_LINKS = [
-  { label: 'Tiny Desk AI', href: '/tiny-desk-ai' },
-  { label: 'Gas Station Dance AI', href: '/gas-station-dance-ai' },
-  { label: 'Say It Right AI', href: '/say-it-right-ai' },
-  { label: 'Coldplay Kiss Cam', href: '/coldplay-kiss-cam' },
-  { label: 'Shan Shen Bu', href: '/shan-shen-bu' },
-  { label: 'Flying Car AI', href: '/flying-car-ai' },
-  { label: 'A2O LITE AI', href: '/a2o-lite-ai' },
-  { label: 'Enzo Fernandez AI', href: '/enzo-fernandez-ai' },
-  { label: 'Crazy Frog AI', href: '/crazy-frog-ai' },
-  { label: 'Bad Times AI', href: '/kairo-bad-times' },
-  { label: 'Smalltown Boy Dance', href: '/smalltown-boy-dance' },
-  { label: 'Rumpelstiltskin AI', href: '/ai-rumpelstiltskin' },
-  { label: 'Bulin 47 AI', href: '/bulin-47-ai' },
-  { label: 'Glow Stick AI', href: '/glow-stick-ai' },
-  { label: 'Hotel Lobby', href: '/hotel-lobby-ai' },
-  { label: 'Zombie Hug', href: '/ai-zombie-hug' },
-  { label: 'Day of the Dead AI Video', href: '/day-of-the-dead-ai-video' },
+  {
+    label: 'Tiny Desk AI',
+    href: '/tiny-desk-ai',
+    poster: '/videos/tiny-desk-ai-tpl-poster.jpg',
+  },
+  {
+    label: 'Gas Station Dance AI',
+    href: '/gas-station-dance-ai',
+    poster: '/videos/long-trival-tpl-poster.jpg',
+  },
+  {
+    label: 'Say It Right AI',
+    href: '/say-it-right-ai',
+    poster: '/videos/say-it-right-dance-tpl-poster.jpg',
+  },
+  {
+    label: 'Coldplay Kiss Cam',
+    href: '/coldplay-kiss-cam',
+    poster: '/videos/coldplay-kiss-cam-tpl-poster.jpg',
+  },
+  {
+    label: 'Shan Shen Bu',
+    href: '/shan-shen-bu',
+    poster: '/videos/shan-shen-bu-tpl-poster.jpg',
+  },
+  {
+    label: 'Flying Car AI',
+    href: '/flying-car-ai',
+    poster: '/videos/flying-car-ai-tpl-poster.jpg',
+  },
+  {
+    label: 'A2O LITE AI',
+    href: '/a2o-lite-ai',
+    poster: '/videos/a2o-lite-ai-tpl-poster.jpg',
+  },
+  {
+    label: 'Enzo Fernandez AI',
+    href: '/enzo-fernandez-ai',
+    poster: '/videos/enzo-fernandez-ai-tpl-poster.jpg',
+  },
+  {
+    label: 'Crazy Frog AI',
+    href: '/crazy-frog-ai',
+    poster: '/videos/crazy-frog-tpl-poster.jpg',
+  },
+  {
+    label: 'Bad Times AI',
+    href: '/kairo-bad-times',
+    poster: '/videos/kairo-bad-times-tpl-poster.jpg',
+  },
+  {
+    label: 'Smalltown Boy Dance',
+    href: '/smalltown-boy-dance',
+    poster: '/videos/smalltown-boy-dance-tpl-poster.jpg',
+  },
+  {
+    label: 'Rumpelstiltskin AI',
+    href: '/ai-rumpelstiltskin',
+    poster: '/videos/rumpelstiltskin-tpl-poster.jpg',
+  },
+  {
+    label: 'Bulin 47 AI',
+    href: '/bulin-47-ai',
+    poster: '/videos/bulin47-tpl-poster.jpg',
+  },
+  {
+    label: 'Glow Stick AI',
+    href: '/glow-stick-ai',
+    poster: '/videos/glow-stick-tpl-poster.jpg',
+  },
+  {
+    label: 'Chipmunks Dance',
+    href: '/chipmunks-dance',
+    poster: '/videos/chipmunks-dance-tpl-poster.jpg',
+  },
+  {
+    label: 'Hotel Lobby',
+    href: '/hotel-lobby-ai',
+    poster: '/readme/hotel-lobby.jpg',
+  },
+  {
+    label: 'Zombie Hug',
+    href: '/ai-zombie-hug',
+    poster: '/readme/zombie-hug.jpg',
+  },
+  {
+    label: 'Day of the Dead AI Video',
+    href: '/day-of-the-dead-ai-video',
+    poster: '/videos/day-of-the-dead-ai-video-demo-poster.jpg',
+  },
 ] as const;
 
 const navLinkClass =
@@ -64,6 +137,29 @@ function TrendingHotMark({ className }: { className?: string }) {
     />
   );
 }
+
+function TrendingThumb({
+  poster,
+  className,
+}: {
+  poster: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn('bg-muted/40 block overflow-hidden rounded-md', className)}
+    >
+      <img
+        src={poster}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="aspect-video w-full object-cover"
+      />
+    </span>
+  );
+}
+
 function BrandLink({ className }: { className?: string }) {
   return (
     <Link href="/" className={cn('flex items-center gap-2', className)}>
@@ -154,15 +250,24 @@ export function SiteHeader() {
                   {m['site.header.trending']()}
                   <ChevronDownIcon className="ml-1 size-3.5 opacity-70" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-40">
-                  {TRENDING_LINKS.map((item) => (
-                    <DropdownMenuItem
-                      key={item.href}
-                      onClick={() => router.push(item.href)}
-                    >
-                      {item.label}
-                    </DropdownMenuItem>
-                  ))}
+                <DropdownMenuContent
+                  align="start"
+                  className="w-[min(720px,calc(100vw-2rem))] p-3"
+                >
+                  <div className="grid grid-cols-4 gap-2">
+                    {TRENDING_LINKS.map((item) => (
+                      <DropdownMenuItem
+                        key={item.href}
+                        onClick={() => router.push(item.href)}
+                        className="hover:bg-accent focus:bg-accent flex h-auto cursor-pointer flex-col items-stretch gap-1.5 rounded-lg px-1.5 py-1.5"
+                      >
+                        <TrendingThumb poster={item.poster} />
+                        <span className="text-foreground line-clamp-2 px-0.5 text-left text-xs leading-snug font-medium">
+                          {item.label}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
               {NAV_LINKS.map((item) => (
@@ -212,15 +317,18 @@ export function SiteHeader() {
                       <TrendingHotMark className="size-3" />
                       {m['site.header.trending']()}
                     </p>
-                    <div className="mt-1 flex flex-col">
+                    <div className="mt-2 grid grid-cols-2 gap-2">
                       {TRENDING_LINKS.map((item) => (
                         <Link
                           key={item.href}
                           href={item.href}
-                          className="py-2 pl-2 text-sm font-medium"
+                          className="hover:bg-accent focus-visible:bg-accent rounded-lg p-1.5 transition-colors"
                           onClick={() => setSheetOpen(false)}
                         >
-                          {item.label}
+                          <TrendingThumb poster={item.poster} />
+                          <span className="mt-1.5 line-clamp-2 block px-0.5 text-xs leading-snug font-medium">
+                            {item.label}
+                          </span>
                         </Link>
                       ))}
                     </div>

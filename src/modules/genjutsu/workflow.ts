@@ -23,6 +23,7 @@ export const ZOMBIE_HUG_PRODUCT = 'zombie-hug' as const;
 export const TINY_DESK_AI_PRODUCT = 'tiny-desk-ai' as const;
 export const SHAN_SHEN_BU_PRODUCT = 'shan-shen-bu' as const;
 export const GLOW_STICK_PRODUCT = 'glow-stick' as const;
+export const CHIPMUNKS_DANCE_PRODUCT = 'chipmunks-dance' as const;
 
 /** Keep inline to avoid a cycle with seedance-higgsfield.ts → workflow. */
 const SEEDANCE_HIGGSFIELD_MODEL_ID =
@@ -47,7 +48,8 @@ export function isGenjutsuProductId(
     value === ZOMBIE_HUG_PRODUCT ||
     value === TINY_DESK_AI_PRODUCT ||
     value === SHAN_SHEN_BU_PRODUCT ||
-    value === GLOW_STICK_PRODUCT
+    value === GLOW_STICK_PRODUCT ||
+    value === CHIPMUNKS_DANCE_PRODUCT
   );
 }
 
@@ -163,8 +165,13 @@ export function resolveProductProviderTarget(
   product: string | null | undefined,
   mode: GenjutsuMode
 ): GenjutsuProviderTarget {
-  // Glow Stick / Tiny Desk track homepage Genjutsu Light (ignore PRODUCT_PROVIDER).
-  if (product === GLOW_STICK_PRODUCT || product === TINY_DESK_AI_PRODUCT) {
+  // Glow Stick / Tiny Desk / Chipmunks Dance track homepage Genjutsu Light
+  // (ignore PRODUCT_PROVIDER).
+  if (
+    product === GLOW_STICK_PRODUCT ||
+    product === TINY_DESK_AI_PRODUCT ||
+    product === CHIPMUNKS_DANCE_PRODUCT
+  ) {
     return resolveGenjutsuProviderTarget(mode);
   }
 

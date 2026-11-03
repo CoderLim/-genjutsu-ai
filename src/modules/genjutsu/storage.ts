@@ -966,6 +966,13 @@ export function getGlowStickAiTemplateVideoKey() {
   );
 }
 
+export function getChipmunksDanceTemplateVideoKey() {
+  return (
+    envConfigs.chipmunks_dance_template_video_key?.trim() ||
+    'genjutsu/templates/chipmunks-dance-v1.mp4'
+  );
+}
+
 export function getBurningBridgesAiTemplateVideoKey() {
   return (
     envConfigs.burning_bridges_ai_template_video_key?.trim() ||
@@ -1117,6 +1124,14 @@ export async function ensureGlowStickAiTemplateInR2() {
   });
 }
 
+export async function ensureChipmunksDanceTemplateInR2() {
+  return ensureGenjutsuPublicTemplateInR2({
+    key: getChipmunksDanceTemplateVideoKey(),
+    localRelative: 'public/videos/chipmunks-dance-tpl.mp4',
+    label: 'Chipmunks Dance',
+  });
+}
+
 export async function ensureBurningBridgesAiTemplateInR2() {
   return ensureGenjutsuPublicTemplateInR2({
     key: getBurningBridgesAiTemplateVideoKey(),
@@ -1188,6 +1203,8 @@ export function getGenjutsuProductTemplateVideoKey(
       return getShanShenBuTemplateVideoKey();
     case 'glow-stick':
       return getGlowStickAiTemplateVideoKey();
+    case 'chipmunks-dance':
+      return getChipmunksDanceTemplateVideoKey();
     default: {
       const _exhaustive: never = product;
       throw new Error(
@@ -1232,6 +1249,8 @@ export async function ensureGenjutsuProductTemplateInR2(
       return ensureShanShenBuTemplateInR2();
     case 'glow-stick':
       return ensureGlowStickAiTemplateInR2();
+    case 'chipmunks-dance':
+      return ensureChipmunksDanceTemplateInR2();
     default: {
       const _exhaustive: never = product;
       throw new Error(
@@ -1325,6 +1344,7 @@ export async function sealGenjutsuTemplateR2Inputs(params: {
   const gangnamStyleAiKey = getGangnamStyleAiTemplateVideoKey();
   const gasStationDanceAiKey = getGasStationDanceAiTemplateVideoKey();
   const glowStickAiKey = getGlowStickAiTemplateVideoKey();
+  const chipmunksDanceKey = getChipmunksDanceTemplateVideoKey();
   const burningBridgesAiKey = getBurningBridgesAiTemplateVideoKey();
   const tinyDeskAiKey = getTinyDeskAiTemplateVideoKey();
   const templateVideoKey =
@@ -1350,11 +1370,13 @@ export async function sealGenjutsuTemplateR2Inputs(params: {
                         ? await ensureGasStationDanceAiTemplateInR2()
                         : params.templateVideoKey === glowStickAiKey
                           ? await ensureGlowStickAiTemplateInR2()
-                          : params.templateVideoKey === burningBridgesAiKey
-                            ? await ensureBurningBridgesAiTemplateInR2()
-                            : params.templateVideoKey === tinyDeskAiKey
-                              ? await ensureTinyDeskAiTemplateInR2()
-                              : params.templateVideoKey;
+                          : params.templateVideoKey === chipmunksDanceKey
+                            ? await ensureChipmunksDanceTemplateInR2()
+                            : params.templateVideoKey === burningBridgesAiKey
+                              ? await ensureBurningBridgesAiTemplateInR2()
+                              : params.templateVideoKey === tinyDeskAiKey
+                                ? await ensureTinyDeskAiTemplateInR2()
+                                : params.templateVideoKey;
 
   assertSafeObjectKey(templateVideoKey);
   if (!templateVideoKey.startsWith('genjutsu/')) {

@@ -13,6 +13,12 @@ import {
   BURNING_BRIDGES_AI_PRODUCT_ID,
   BURNING_BRIDGES_AI_RESOLUTIONS,
 } from '@/modules/burning-bridges-ai/constants';
+import { isAllowedChipmunksDancePrompt } from '@/modules/chipmunks-dance/assert';
+import {
+  CHIPMUNKS_DANCE_MODE,
+  CHIPMUNKS_DANCE_PRODUCT_ID,
+  CHIPMUNKS_DANCE_RESOLUTIONS,
+} from '@/modules/chipmunks-dance/constants';
 import { isAllowedColdplayKissCamPrompt } from '@/modules/coldplay-kiss-cam/assert';
 import {
   COLDPLAY_KISS_CAM_MODE,
@@ -405,6 +411,30 @@ async function POST({ request }: { request: Request }) {
     if (isGlowStickAi && !isAllowedGlowStickAiPrompt(prompt)) {
       return respErr(
         'Glow Stick AI prompt does not match the fixed product prompt',
+        {
+          status: 400,
+        }
+      );
+    }
+    const isChipmunksDance = product === CHIPMUNKS_DANCE_PRODUCT_ID;
+    if (isChipmunksDance && mode !== CHIPMUNKS_DANCE_MODE) {
+      return respErr('Chipmunks Dance only supports objects-swap', {
+        status: 400,
+      });
+    }
+    if (
+      isChipmunksDance &&
+      !CHIPMUNKS_DANCE_RESOLUTIONS.includes(
+        resolution as (typeof CHIPMUNKS_DANCE_RESOLUTIONS)[number]
+      )
+    ) {
+      return respErr('Chipmunks Dance only supports 480p and 720p', {
+        status: 400,
+      });
+    }
+    if (isChipmunksDance && !isAllowedChipmunksDancePrompt(prompt)) {
+      return respErr(
+        'Chipmunks Dance prompt does not match the fixed product prompt',
         {
           status: 400,
         }
