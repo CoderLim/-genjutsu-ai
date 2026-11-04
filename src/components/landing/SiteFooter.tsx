@@ -2,8 +2,10 @@ import { Github } from 'lucide-react';
 
 import { Link } from '@/core/i18n/navigation';
 import { envConfigs } from '@/config';
+import { localeNames } from '@/config/locale';
 import { cn } from '@/lib/cn';
 import { m } from '@/paraglide/messages.js';
+import { locales, localizeHref } from '@/paraglide/runtime.js';
 import { RaphaelLogo } from '@/components/icons';
 import { FOOTER_COLUMNS } from '@/components/landing/content';
 
@@ -15,6 +17,8 @@ function translatedFooterText(value: string) {
       return m['site.footer.tools']();
     case 'More Tools':
       return m['site.footer.more_tools']();
+    case 'Languages':
+      return m['site.footer.languages']();
     case 'Features':
       return m['site.footer.features']();
     case 'Pricing':
@@ -109,25 +113,56 @@ export function SiteFooter() {
               </div>
             </div>
 
-            <div className="grid w-full max-w-2xl grid-cols-2 gap-8 sm:grid-cols-3">
-              {FOOTER_COLUMNS.map((column) => (
-                <div key={translatedFooterText(column.title)}>
-                  <p className="text-foreground mb-6 font-bold">
-                    {translatedFooterText(column.title)}
-                  </p>
-                  <ul className="space-y-3">
-                    {column.links.map((link) => (
-                      <li key={link.label}>
-                        <FooterLink
-                          href={link.href}
-                          label={translatedFooterText(link.label)}
-                          badge={link.badge}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+            <div className="grid w-full max-w-4xl grid-cols-2 gap-8 sm:grid-cols-4">
+              {FOOTER_COLUMNS.flatMap((column) => {
+                const columnNode = (
+                  <div key={column.title}>
+                    <p className="text-foreground mb-6 font-bold">
+                      {translatedFooterText(column.title)}
+                    </p>
+                    <ul className="space-y-3">
+                      {column.links.map((link) => (
+                        <li key={link.label}>
+                          <FooterLink
+                            href={link.href}
+                            label={translatedFooterText(link.label)}
+                            badge={link.badge}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+
+                if (column.title !== 'Tools') {
+                  return [columnNode];
+                }
+
+                // Languages sits immediately to the right of Tools.
+                // Use plain <a> + localizeHref so cross-locale URLs are not
+                // re-prefixed by the locale-aware Link rewrite.
+                return [
+                  columnNode,
+                  <div key="languages">
+                    <p className="text-foreground mb-6 font-bold">
+                      {translatedFooterText('Languages')}
+                    </p>
+                    <ul className="space-y-3">
+                      {locales.map((loc) => (
+                        <li key={loc}>
+                          <a
+                            href={localizeHref('/', { locale: loc })}
+                            hrefLang={loc}
+                            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                          >
+                            {localeNames[loc] || loc}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>,
+                ];
+              })}
             </div>
           </div>
 
