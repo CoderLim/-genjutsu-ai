@@ -26,6 +26,7 @@ test('missing presetId resolves to hotel-lobby', () => {
   assert.equal(preset.keepAudio, true);
   assert.equal(preset.aspectRatio, '16:9');
   assert.equal(preset.allowCustomVideo, true);
+  assert.equal(preset.allowTrim, false);
 });
 
 test('crazy-frog preset is fixed template, two images, keep audio', () => {
@@ -101,13 +102,13 @@ test('disabled glow-stick rejects when requireEnabled (migrated to genjutsu)', (
   );
 });
 
-test('58th-floor preset mirrors hotel-lobby: 1–2 photos, trim, custom video, 16:9', () => {
+test('58th-floor preset mirrors hotel-lobby: 1–2 photos, custom video, no trim, 16:9', () => {
   const preset = resolveHotelLobbyPreset(FIFTY_EIGHTH_FLOOR_PRESET_ID);
   assert.equal(preset.id, FIFTY_EIGHTH_FLOOR_PRESET_ID);
   assert.equal(preset.imageCount.min, 1);
   assert.equal(preset.imageCount.max, 2);
   assert.equal(preset.allowCustomVideo, true);
-  assert.equal(preset.allowTrim, true);
+  assert.equal(preset.allowTrim, false);
   assert.equal(preset.keepAudio, true);
   assert.equal(preset.aspectRatio, '16:9');
   assert.equal(preset.enabled, true);
