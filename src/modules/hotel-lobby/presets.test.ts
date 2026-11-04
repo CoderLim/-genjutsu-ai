@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  build58thFloorPrompt,
   buildBulin47Prompt,
   buildCrazyFrogPrompt,
   buildGlowStickPrompt,
   buildRumpelstiltskinPrompt,
   BULIN_47_PRESET_ID,
   CRAZY_FROG_PRESET_ID,
+  FIFTY_EIGHTH_FLOOR_PRESET_ID,
   getHotelLobbyPresetPublicMeta,
   GLOW_STICK_PRESET_ID,
   HOTEL_LOBBY_PRESET_ID,
@@ -99,6 +101,22 @@ test('disabled glow-stick rejects when requireEnabled (migrated to genjutsu)', (
   );
 });
 
+test('58th-floor preset mirrors hotel-lobby: 1–2 photos, trim, custom video, 16:9', () => {
+  const preset = resolveHotelLobbyPreset(FIFTY_EIGHTH_FLOOR_PRESET_ID);
+  assert.equal(preset.id, FIFTY_EIGHTH_FLOOR_PRESET_ID);
+  assert.equal(preset.imageCount.min, 1);
+  assert.equal(preset.imageCount.max, 2);
+  assert.equal(preset.allowCustomVideo, true);
+  assert.equal(preset.allowTrim, true);
+  assert.equal(preset.keepAudio, true);
+  assert.equal(preset.aspectRatio, '16:9');
+  assert.equal(preset.enabled, true);
+  assert.equal(preset.downloadPrefix, '58th-floor');
+  assert.equal(preset.previewUrl, '/api/genjutsu/template?product=58th-floor');
+  assert.equal(preset.localTemplatePath, 'public/videos/58th-floor-tpl.mp4');
+  assert.match(preset.templateVideoKey, /58th-floor-v1\.mp4$/);
+});
+
 test('all hotel-lobby presets keep audio by default', () => {
   for (const id of [
     HOTEL_LOBBY_PRESET_ID,
@@ -106,6 +124,7 @@ test('all hotel-lobby presets keep audio by default', () => {
     RUMPELSTILTSKIN_PRESET_ID,
     BULIN_47_PRESET_ID,
     GLOW_STICK_PRESET_ID,
+    FIFTY_EIGHTH_FLOOR_PRESET_ID,
   ] as const) {
     assert.equal(
       resolveHotelLobbyPreset(id, { requireEnabled: false }).keepAudio,
@@ -140,6 +159,7 @@ test('isHotelLobbyPresetId derives from registry', () => {
   assert.equal(isHotelLobbyPresetId('rumpelstiltskin'), true);
   assert.equal(isHotelLobbyPresetId('bulin-47'), true);
   assert.equal(isHotelLobbyPresetId('glow-stick'), true);
+  assert.equal(isHotelLobbyPresetId('58th-floor'), true);
   assert.equal(isHotelLobbyPresetId('zombie-hug'), false);
 });
 
@@ -190,6 +210,18 @@ test('glow-stick prompt names three Elements and hard-replaces center cues', () 
   assert.match(prompt, /Do not leave the original center woman/i);
   assert.match(prompt, /Do not swap Element1, Element2, and Element3/i);
   assert.throws(() => buildGlowStickPrompt(2), HotelLobbyPreflightError);
+});
+
+test('58th-floor prompt names teal studio and left/right Elements', () => {
+  const prompt = build58thFloorPrompt(2);
+  assert.match(prompt, /@Video1/);
+  assert.match(prompt, /@Element1/);
+  assert.match(prompt, /@Element2/);
+  assert.match(prompt, /teal studio/i);
+  assert.match(prompt, /left performer/i);
+  assert.match(prompt, /right performer/i);
+  assert.match(prompt, /do not keep the original right performer/i);
+  assert.throws(() => build58thFloorPrompt(3), HotelLobbyPreflightError);
 });
 
 test('public meta includes UI fields', () => {

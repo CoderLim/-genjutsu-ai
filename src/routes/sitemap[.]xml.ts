@@ -14,6 +14,7 @@ const STATIC_PATHS = [
   '/pricing',
   '/genjutsu-prompts',
   '/hotel-lobby-ai',
+  '/58th-floor-ai-video',
   '/coldplay-kiss-cam',
   '/tiny-desk-ai',
   '/gangnam-style-ai',
@@ -48,6 +49,8 @@ const LIMITED_STATIC_PATH_LOCALES: Record<string, readonly string[]> = {
   '/bulin-47-ai': [baseLocale],
   // Glow Stick ships English editorial first.
   '/glow-stick-ai': [baseLocale],
+  // 58th Floor ships English editorial first.
+  '/58th-floor-ai-video': [baseLocale],
   // Chipmunks Dance ships English editorial first.
   '/chipmunks-dance': [baseLocale],
   // Tiny Desk AI ships English editorial first — do not advertise /ja /ko /es mirrors.

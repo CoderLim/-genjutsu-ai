@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 
 import { useSession } from '@/core/auth/client';
 import {
+  FIFTY_EIGHTH_FLOOR_PRESET_ID,
   getHotelLobbyPresetClientDefaults,
   HOTEL_LOBBY_PRESET_ID,
   isHotelLobbyPresetId,
@@ -219,6 +220,7 @@ function redirectToSignIn() {
 function PersonSlot({
   title,
   note,
+  imageAlt,
   item,
   onPick,
   onRemove,
@@ -229,6 +231,7 @@ function PersonSlot({
 }: {
   title: string;
   note: string;
+  imageAlt?: string;
   item: MediaItem | null;
   onPick: (file: File | null) => void;
   onRemove: () => void;
@@ -263,7 +266,11 @@ function PersonSlot({
             frameClassName
           )}
         >
-          <img src={item.url} alt={title} className="size-full object-cover" />
+          <img
+            src={item.url}
+            alt={imageAlt ?? title}
+            className="size-full object-cover"
+          />
           <button
             type="button"
             disabled={disabled}
@@ -364,6 +371,7 @@ export function HotelLobbyGeneratorPanel({
     presetMeta?.downloadPrefix ?? clientDefaults.downloadPrefix;
   const displayName = presetMeta?.displayName ?? clientDefaults.displayName;
   const isFixedTemplate = !allowCustomVideo;
+  const is58thFloor = presetId === FIFTY_EIGHTH_FLOOR_PRESET_ID;
   const usesDualSubjectCopy = isFixedTemplate && minImages === 2;
   const usesTripleSubjectCopy = isFixedTemplate && minImages >= 3;
   const previewAspectClass =
@@ -1203,11 +1211,13 @@ export function HotelLobbyGeneratorPanel({
                       : m['site.hotel.reference']()}
                 </p>
                 <p className="mt-0.5 text-xs leading-5 text-white/40">
-                  {usesDualSubjectCopy
-                    ? m['site.crazy.reference_note']()
-                    : isFixedTemplate
-                      ? m['site.kling.fixed_reference_note']()
-                      : m['site.hotel.reference_note']()}
+                  {is58thFloor
+                    ? m['site.floor58.reference_note']()
+                    : usesDualSubjectCopy
+                      ? m['site.crazy.reference_note']()
+                      : isFixedTemplate
+                        ? m['site.kling.fixed_reference_note']()
+                        : m['site.hotel.reference_note']()}
                 </p>
               </div>
               {video?.kind === 'template' ? (
@@ -1248,11 +1258,18 @@ export function HotelLobbyGeneratorPanel({
                     ref={previewVideoRef}
                     key={video.url}
                     src={video.url}
-                    poster={isFixedTemplate ? posterUrl : undefined}
+                    poster={
+                      isFixedTemplate || is58thFloor ? posterUrl : undefined
+                    }
                     controls
                     muted
                     playsInline
                     preload="metadata"
+                    aria-label={
+                      is58thFloor
+                        ? m['site.floor58.hero_video_alt']()
+                        : undefined
+                    }
                     className="size-full object-contain"
                     onLoadedMetadata={(event) => {
                       const seconds = event.currentTarget.duration;
@@ -1414,6 +1431,9 @@ export function HotelLobbyGeneratorPanel({
                         ? m['site.kling.fixed_photo_note']()
                         : m['site.hotel.first_note']()
                 }
+                imageAlt={
+                  is58thFloor ? m['site.floor58.slot_left_alt']() : undefined
+                }
                 item={firstImage}
                 inputRef={firstImageInputRef}
                 disabled={busy}
@@ -1444,6 +1464,9 @@ export function HotelLobbyGeneratorPanel({
                         ? m['site.crazy.second_note']()
                         : m['site.hotel.second_note']()
                   }
+                  imageAlt={
+                    is58thFloor ? m['site.floor58.slot_right_alt']() : undefined
+                  }
                   item={secondImage}
                   inputRef={secondImageInputRef}
                   disabled={busy}
@@ -1469,6 +1492,11 @@ export function HotelLobbyGeneratorPanel({
                 />
               ) : null}
             </div>
+            {is58thFloor ? (
+              <p className="mt-3 text-xs leading-5 text-white/38">
+                {m['site.floor58.upload_compliance']()}
+              </p>
+            ) : null}
           </div>
         </div>
 

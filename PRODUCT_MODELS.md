@@ -63,6 +63,7 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 | 路径                        | provider                | model                                                                                       |
 | --------------------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
 | `/hotel-lobby-ai`           | fal                     | `fal-ai/kling-video/o3/standard/video-to-video/edit`                                        |
+| `/58th-floor-ai-video`      | fal（Hotel Lobby 面板） | 同上                                                                                        |
 | `/bulin-47-ai`              | fal（Hotel Lobby 面板） | 同上                                                                                        |
 | `/ai-rumpelstiltskin`       | fal（Hotel Lobby 面板） | 同上                                                                                        |
 | `/h3-lab`                   | fal                     | `minimax/h3/reference-to-video`                                                             |

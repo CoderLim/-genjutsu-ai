@@ -523,6 +523,7 @@ function HotelLobbyAiPage() {
               </h2>
               <div className="mt-5 flex flex-wrap gap-3">
                 {[
+                  ['58th Floor AI video generator', '/58th-floor-ai-video'],
                   [m['site.hotel.more_a2o'](), '/a2o-lite-ai'],
                   [m['site.hotel.more1'](), '/'],
                   [m['site.hotel.more2'](), '/genjutsu-prompts'],

@@ -106,6 +106,11 @@ const TRENDING_LINKS = [
     poster: '/videos/chipmunks-dance-tpl-poster.jpg',
   },
   {
+    label: '58th Floor AI',
+    href: '/58th-floor-ai-video',
+    poster: '/videos/58th-floor-tpl-poster.jpg',
+  },
+  {
     label: 'Hotel Lobby',
     href: '/hotel-lobby-ai',
     poster: '/readme/hotel-lobby.jpg',

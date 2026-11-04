@@ -8,6 +8,7 @@ export const CRAZY_FROG_PRESET_ID = 'crazy-frog' as const;
 export const RUMPELSTILTSKIN_PRESET_ID = 'rumpelstiltskin' as const;
 export const BULIN_47_PRESET_ID = 'bulin-47' as const;
 export const GLOW_STICK_PRESET_ID = 'glow-stick' as const;
+export const FIFTY_EIGHTH_FLOOR_PRESET_ID = '58th-floor' as const;
 
 const DEFAULT_HOTEL_LOBBY_TEMPLATE_KEY = 'hotel-lobby/templates/default.mp4';
 const CRAZY_FROG_TEMPLATE_KEY = 'hotel-lobby/templates/crazy-frog-v1.mp4';
@@ -15,6 +16,8 @@ const RUMPELSTILTSKIN_TEMPLATE_KEY =
   'hotel-lobby/templates/rumpelstiltskin-v1.mp4';
 const BULIN_47_TEMPLATE_KEY = 'hotel-lobby/templates/bulin-47-v1.mp4';
 const GLOW_STICK_TEMPLATE_KEY = 'hotel-lobby/templates/glow-stick-v1.mp4';
+const FIFTY_EIGHTH_FLOOR_TEMPLATE_KEY =
+  'hotel-lobby/templates/58th-floor-v1.mp4';
 
 function hotelLobbyTemplateVideoKey() {
   return (
@@ -117,6 +120,34 @@ export function buildGlowStickPrompt(imageCount: number) {
   ].join(' ');
 }
 
+/**
+ * 58th Floor teal-studio duet — same Kling O3 lessons as Hotel Lobby:
+ * short imperatives; left/right Element mapping; explicit "do not keep".
+ */
+export function build58thFloorPrompt(imageCount: number) {
+  if (imageCount === 1) {
+    return [
+      'Use @Video1 only for motion, timing, gestures, camera, framing, hanging microphone, teal studio, and shot progression.',
+      'Change every visible performer in @Video1 to be the subject from @Element1. Match face, hair, body, clothing, and species from @Element1 for the whole clip.',
+      'Keep the teal studio, hanging microphone, choreography, and background from @Video1. Do not add extra people.',
+    ].join(' ');
+  }
+
+  if (imageCount === 2) {
+    return [
+      'Use @Video1 only for motion, timing, gestures, camera, framing, hanging microphone, teal studio, and shot progression.',
+      'Change the left performer in @Video1 to be the person or character from @Element1.',
+      'Change the right performer in @Video1 to be the person or character from @Element2 — do not keep the original right performer.',
+      'Match each side to its Element for face, hair, body, clothing, and species throughout the clip. Do not swap left/right or blend the two identities.',
+      'Keep the teal studio, hanging microphone, choreography, and background from @Video1.',
+    ].join(' ');
+  }
+
+  throw new HotelLobbyPreflightError(
+    '58th Floor requires one or two reference images'
+  );
+}
+
 const PRESETS = {
   [HOTEL_LOBBY_PRESET_ID]: {
     id: HOTEL_LOBBY_PRESET_ID,
@@ -213,6 +244,24 @@ const PRESETS = {
     // Migrated to homepage Genjutsu Light (`/glow-stick-ai` → `/api/genjutsu/*`).
     enabled: false,
     promptFor: buildGlowStickPrompt,
+  },
+  [FIFTY_EIGHTH_FLOOR_PRESET_ID]: {
+    id: FIFTY_EIGHTH_FLOOR_PRESET_ID,
+    version: 1,
+    displayName: '58th Floor',
+    creditDescription: 'Reserve credits for 58th Floor AI generation',
+    templateVideoKey: FIFTY_EIGHTH_FLOOR_TEMPLATE_KEY,
+    localTemplatePath: 'public/videos/58th-floor-tpl.mp4',
+    previewUrl: '/api/genjutsu/template?product=58th-floor',
+    posterUrl: '/videos/58th-floor-tpl-poster.jpg',
+    downloadPrefix: '58th-floor',
+    imageCount: { min: 1, max: 2 },
+    allowCustomVideo: true,
+    allowTrim: true,
+    keepAudio: true,
+    aspectRatio: '16:9',
+    enabled: true,
+    promptFor: build58thFloorPrompt,
   },
 } as const satisfies Record<string, HotelLobbyPresetDef>;
 

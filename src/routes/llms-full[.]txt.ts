@@ -18,6 +18,11 @@ const STATIC_PAGES: { path: string; title: string; description: string }[] = [
     description: 'Preset two-photo Hotel Lobby AI video generator',
   },
   {
+    path: '/58th-floor-ai-video',
+    title: '58th Floor AI Video Generator',
+    description: 'Preset 1–2 photo teal-studio 58th Floor AI video generator',
+  },
+  {
     path: '/bulin-47-ai',
     title: 'Bulin 47 AI Video',
     description: 'One-photo Bulin 47 freestyle AI video generator',
