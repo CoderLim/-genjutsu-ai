@@ -3025,6 +3025,7 @@
   "site.vfs.err_still_processing": "아직 처리 중입니다. 나중에 새로고침하세요 — 작업은 저장되어 있습니다.",
   "site.vfs.err_poll_failed": "상태 조회에 실패했습니다",
   "site.vfs.err_upload_incomplete": "업로드 URL이 불완전했습니다",
+  "site.templates.chipmunks_dance": "Chipmunks Dance",
   "site.templates.glow_stick": "Glow Stick",
   "site.glow_stick.page_title": "Glow Stick AI Video Generator — 3 Photos, Sync Dance",
   "site.glow_stick.page_description": "Put three people into the viral glow-stick sync dance. Upload three photos, keep the sticks and lighting, export a vertical clip.",

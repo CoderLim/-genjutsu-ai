@@ -7,6 +7,10 @@ import {
   BURNING_BRIDGES_AI_TEMPLATE_POSTER_PATH,
 } from '@/modules/burning-bridges-ai/constants';
 import {
+  CHIPMUNKS_DANCE_TEMPLATE_DISPLAY_PATH,
+  CHIPMUNKS_DANCE_TEMPLATE_POSTER_PATH,
+} from '@/modules/chipmunks-dance/constants';
+import {
   COLDPLAY_KISS_CAM_TEMPLATE_PATH,
   COLDPLAY_KISS_CAM_TEMPLATE_POSTER_PATH,
 } from '@/modules/coldplay-kiss-cam/constants';
@@ -86,6 +90,14 @@ const DEFAULT_OBJECTS_RESOLUTION = '480p' as const;
  * Order: newest first — prepend new templates at the top of this array.
  */
 export const MOTION_TEMPLATES: MotionTemplate[] = [
+  {
+    id: 'chipmunks-dance',
+    titleKey: 'site.templates.chipmunks_dance',
+    poster: CHIPMUNKS_DANCE_TEMPLATE_POSTER_PATH,
+    sourceVideo: CHIPMUNKS_DANCE_TEMPLATE_DISPLAY_PATH,
+    href: '/chipmunks-dance',
+    aspect: 'portrait',
+  },
   {
     id: 'glow-stick',
     titleKey: 'site.templates.glow_stick',

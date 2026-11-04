@@ -3025,6 +3025,7 @@
   "site.vfs.err_still_processing": "Ainda processando. Atualize mais tarde — seu trabalho está salvo.",
   "site.vfs.err_poll_failed": "Falha ao consultar o status",
   "site.vfs.err_upload_incomplete": "As URLs de upload estavam incompletas",
+  "site.templates.chipmunks_dance": "Chipmunks Dance",
   "site.templates.glow_stick": "Glow Stick",
   "site.glow_stick.page_title": "Glow Stick AI Video Generator — 3 Photos, Sync Dance",
   "site.glow_stick.page_description": "Put three people into the viral glow-stick sync dance. Upload three photos, keep the sticks and lighting, export a vertical clip.",
