@@ -151,12 +151,7 @@ export function build58thFloorPrompt(imageCount: number) {
 }
 
 /**
- * Bicep Heart Trend — flex + hand-on-bicep heart.
- *
- * Same Kling O3 lesson as Glow Stick / Hotel Lobby: name the original look
- * explicitly and use hard Replace wording. Soft "change the person who
- * flexes…" leaves the template face in place when the source identity is
- * strong (long brown hair + white tee in a bedroom).
+ * Bicep Heart Trend — full character replace + hand-on-bicep heart motion.
  */
 export function buildBicepHeartPrompt(imageCount: number) {
   if (imageCount !== 1) {
@@ -165,12 +160,10 @@ export function buildBicepHeartPrompt(imageCount: number) {
     );
   }
   return [
-    'Use @Video1 only for motion, timing, gestures, camera, bedroom, lighting, and bicep-heart staging.',
-    'Replace the main character with @Element1.',
-    'Change the young woman in @Video1 (long wavy reddish-brown hair, white t-shirt, flexing one arm while both hands form a heart on the bicep) to be the person or character from @Element1 — do not keep her face, hair, shirt, body, or identity.',
-    'Every frame must show @Element1 — never the original woman.',
-    'Match @Element1 for face, hair, body, clothing, and species throughout the clip.',
-    'Keep only the flex, hand-on-bicep heart gesture, bedroom, camera path, and timing from @Video1.',
+    'Completely replace the original performer in @Video1 with @Element1 for the entire video, from the first frame to the last.',
+    'This is a full character replacement, not just a face swap. The new person must match @Element1 in face, hairstyle, body appearance, skin tone, and clothing. The original performer must not appear in any frame.',
+    'Use @Video1 as the reference for the exact body movements, arm gestures, choreography, camera framing, and timing. Recreate the same bicep-heart gesture: one arm flexes while the opposite hand forms a heart shape against the bicep.',
+    'Prioritize accurate character identity from @Element1 and accurate motion from @Video1. Keep natural human anatomy, realistic hand movements, and consistent character identity throughout the video.',
   ].join(' ');
 }
 
@@ -291,7 +284,7 @@ const PRESETS = {
   },
   [BICEP_HEART_PRESET_ID]: {
     id: BICEP_HEART_PRESET_ID,
-    version: 2,
+    version: 3,
     displayName: 'Bicep Heart Trend',
     creditDescription: 'Reserve credits for Bicep Heart Trend AI generation',
     templateVideoKey: BICEP_HEART_TEMPLATE_KEY,

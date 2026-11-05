@@ -255,15 +255,15 @@ test('58th-floor prompt names teal studio and left/right Elements', () => {
   assert.throws(() => build58thFloorPrompt(3), HotelLobbyPreflightError);
 });
 
-test('bicep-heart prompt hard-replaces the original woman cues', () => {
+test('bicep-heart prompt is full character replacement with motion lock', () => {
   const prompt = buildBicepHeartPrompt(1);
   assert.match(prompt, /@Video1/);
   assert.match(prompt, /@Element1/);
-  assert.match(prompt, /Replace the main character with @Element1/i);
-  assert.match(prompt, /reddish-brown hair|white t-shirt/i);
-  assert.match(prompt, /hand-on-bicep|bicep-heart/i);
-  assert.match(prompt, /do not keep her face/i);
-  assert.match(prompt, /never the original woman/i);
+  assert.match(prompt, /Completely replace the original performer/i);
+  assert.match(prompt, /full character replacement/i);
+  assert.match(prompt, /not just a face swap/i);
+  assert.match(prompt, /bicep-heart gesture/i);
+  assert.match(prompt, /must not appear in any frame/i);
   assert.doesNotMatch(prompt, /@Image1/);
   assert.throws(() => buildBicepHeartPrompt(2), HotelLobbyPreflightError);
 });
