@@ -33,6 +33,53 @@ function redirectResponse(url: string) {
   });
 }
 
+/**
+ * Safe download filename prefix from task.options.product (e.g. chipmunks-dance).
+ */
+export function genjutsuResultDownloadFilename(
+  generationId: string,
+  product?: string | null
+) {
+  const prefix =
+    typeof product === 'string' && /^[a-z0-9-]+$/i.test(product.trim())
+      ? product.trim().toLowerCase()
+      : 'genjutsu';
+  return `${prefix}-${generationId.slice(0, 8)}.mp4`;
+}
+
+function productFromTaskOptions(options?: string | null): string | undefined {
+  if (!options) return undefined;
+  try {
+    const parsed = JSON.parse(options) as { product?: unknown };
+    return typeof parsed.product === 'string' ? parsed.product : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function attachmentResponse(params: {
+  sourceUrl: string;
+  filename: string;
+}) {
+  const upstream = await fetch(params.sourceUrl);
+  if (!upstream.ok || !upstream.body) {
+    return errorResponse('Failed to fetch generation result', 502);
+  }
+
+  const headers = new Headers({
+    'Content-Type': upstream.headers.get('Content-Type') || 'video/mp4',
+    'Content-Disposition': `attachment; filename="${params.filename}"`,
+    'Cache-Control': 'private, no-store, max-age=0',
+  });
+  const contentLength = upstream.headers.get('Content-Length');
+  if (contentLength) headers.set('Content-Length', contentLength);
+
+  return new Response(upstream.body, {
+    status: 200,
+    headers,
+  });
+}
+
 async function GET({
   request,
   params,
@@ -55,6 +102,13 @@ async function GET({
     return errorResponse('Generation result not found', 404);
   }
 
+  const wantsDownload =
+    new URL(request.url).searchParams.get('download') === '1';
+  const filename = genjutsuResultDownloadFilename(
+    params.generationId,
+    productFromTaskOptions(task.options)
+  );
+
   const parsed = parseGenjutsuTaskInfo(task);
   const videoKey =
     typeof parsed.result?.videoKey === 'string' ? parsed.result.videoKey : null;
@@ -68,12 +122,16 @@ async function GET({
 
     if (isGenjutsuE2EMockEnabled()) {
       const mockUrl = getGenjutsuE2EUrlForStorageKey(videoKey);
-      return mockUrl
-        ? redirectResponse(mockUrl)
-        : errorResponse('E2E result object not found', 404);
+      if (!mockUrl) return errorResponse('E2E result object not found', 404);
+      return wantsDownload
+        ? attachmentResponse({ sourceUrl: mockUrl, filename })
+        : redirectResponse(mockUrl);
     }
 
-    return redirectResponse(await createGenjutsuR2ReadUrl(videoKey));
+    const signedUrl = await createGenjutsuR2ReadUrl(videoKey);
+    return wantsDownload
+      ? attachmentResponse({ sourceUrl: signedUrl, filename })
+      : redirectResponse(signedUrl);
   }
 
   const legacyUrl =
@@ -91,7 +149,10 @@ async function GET({
     return errorResponse('Invalid legacy result URL', 500);
   }
 
-  return redirectResponse(parsedUrl.toString());
+  const absolute = parsedUrl.toString();
+  return wantsDownload
+    ? attachmentResponse({ sourceUrl: absolute, filename })
+    : redirectResponse(absolute);
 }
 
 export const Route = createFileRoute('/api/genjutsu/result/$generationId')({

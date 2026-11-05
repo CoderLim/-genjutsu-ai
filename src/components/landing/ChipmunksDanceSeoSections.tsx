@@ -76,6 +76,11 @@ const MORE_LINKS = [
   { label: 'Credit pricing', href: '/pricing' },
 ] as const;
 
+const CHIPMUNKS_DANCE_AI_URL = 'https://chipmunksdanceai.net/';
+
+const externalLinkClass =
+  'font-medium text-[rgb(220,155,99)] underline-offset-4 hover:underline';
+
 function Section({
   id,
   title,
@@ -196,7 +201,17 @@ export function ChipmunksDanceSeoSections() {
           rehearse, you can build the routine from photos instead of filming.
           Duos who film in person can still split the four handoffs and drop the
           third solo — the AI path on this page maps the full three-person
-          template.
+          template. If you want a page built only for this trend, there&apos;s
+          also{' '}
+          <a
+            href={CHIPMUNKS_DANCE_AI_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={externalLinkClass}
+          >
+            Chipmunks Dance AI
+          </a>
+          .
         </p>
         <p>
           <strong className="font-medium text-white/70">
