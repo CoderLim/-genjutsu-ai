@@ -1053,6 +1053,13 @@
   "site.bulin.cta_tip1": "正面から撮った写真1枚 — 本人のみ、許可あり",
   "site.bulin.cta_tip2": "縦型9:16出力、約8〜15秒",
   "site.bulin.cta_tip3": "ライセンス済みまたは自分の音声を使用 — 元曲の盗用は禁止",
+  "site.bicep_heart.page_title": "Bicep Heart Trend: How to Make the Video Yourself (Free)",
+  "site.bicep_heart.page_description": "The bicep heart trend blew up on TikTok and Instagram in late October 2026. Learn the two-arm pose, the one-arm version, and how to restyle your clip with AI.",
+  "site.bicep_heart.hero_badge": "Bicep Heart Trend · 1 photo",
+  "site.bicep_heart.hero_title": "Bicep Heart Trend: What It Is and How to Make Your Own",
+  "site.bicep_heart.hero_desc": "Upload one photo onto the bicep heart preset — or swap in your own 3–8 second clip. Keep the flex and the hand-on-bicep heart; your face takes the lead in a vertical clip ready to post.",
+  "site.bicep_heart.hero_cta": "Make my Bicep Heart video",
+  "site.templates.bicep_heart": "Bicep Heart Trend",
   "site.bulin.cta_title": "Bulin 47スタイルのAI動画を作る",
   "site.bulin.demo_caption": "Bulin 47スタイルAI動画 — 写真1枚から作成",
   "site.bulin.hero_badge": "Bulin 47 AI動画 · 写真1枚",
@@ -3082,5 +3089,7 @@
   "site.chipmunks.image_size": "Each photo must be 10MB or smaller",
   "site.chipmunks.provider_label": "Chipmunks Dance",
   "site.crazy.more_chipmunks": "Chipmunks Dance guide",
-  "site.smalltown.seo.more_chipmunks": "Chipmunks Dance guide"
+  "site.smalltown.seo.more_chipmunks": "Chipmunks Dance guide",
+  "site.seo.idea16_title": "Bicep Heart Trend restyle",
+  "site.seo.idea16_prompt": "Keep the same two people and the bicep heart pose. Restyle as 2D anime with a soft rim light and a dark blue background."
 }

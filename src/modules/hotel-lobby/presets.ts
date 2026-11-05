@@ -9,6 +9,7 @@ export const RUMPELSTILTSKIN_PRESET_ID = 'rumpelstiltskin' as const;
 export const BULIN_47_PRESET_ID = 'bulin-47' as const;
 export const GLOW_STICK_PRESET_ID = 'glow-stick' as const;
 export const FIFTY_EIGHTH_FLOOR_PRESET_ID = '58th-floor' as const;
+export const BICEP_HEART_PRESET_ID = 'bicep-heart' as const;
 
 const DEFAULT_HOTEL_LOBBY_TEMPLATE_KEY = 'hotel-lobby/templates/default.mp4';
 const CRAZY_FROG_TEMPLATE_KEY = 'hotel-lobby/templates/crazy-frog-v1.mp4';
@@ -18,6 +19,7 @@ const BULIN_47_TEMPLATE_KEY = 'hotel-lobby/templates/bulin-47-v1.mp4';
 const GLOW_STICK_TEMPLATE_KEY = 'hotel-lobby/templates/glow-stick-v1.mp4';
 const FIFTY_EIGHTH_FLOOR_TEMPLATE_KEY =
   'hotel-lobby/templates/58th-floor-v1.mp4';
+const BICEP_HEART_TEMPLATE_KEY = 'hotel-lobby/templates/bicep-heart-v1.mp4';
 
 function hotelLobbyTemplateVideoKey() {
   return (
@@ -148,6 +150,30 @@ export function build58thFloorPrompt(imageCount: number) {
   );
 }
 
+/**
+ * Bicep Heart Trend — flex + hand-on-bicep heart.
+ *
+ * Same Kling O3 lesson as Glow Stick / Hotel Lobby: name the original look
+ * explicitly and use hard Replace wording. Soft "change the person who
+ * flexes…" leaves the template face in place when the source identity is
+ * strong (long brown hair + white tee in a bedroom).
+ */
+export function buildBicepHeartPrompt(imageCount: number) {
+  if (imageCount !== 1) {
+    throw new HotelLobbyPreflightError(
+      'Bicep Heart requires exactly one reference image'
+    );
+  }
+  return [
+    'Use @Video1 only for motion, timing, gestures, camera, bedroom, lighting, and bicep-heart staging.',
+    'Replace the main character with @Element1.',
+    'Change the young woman in @Video1 (long wavy reddish-brown hair, white t-shirt, flexing one arm while both hands form a heart on the bicep) to be the person or character from @Element1 — do not keep her face, hair, shirt, body, or identity.',
+    'Every frame must show @Element1 — never the original woman.',
+    'Match @Element1 for face, hair, body, clothing, and species throughout the clip.',
+    'Keep only the flex, hand-on-bicep heart gesture, bedroom, camera path, and timing from @Video1.',
+  ].join(' ');
+}
+
 const PRESETS = {
   [HOTEL_LOBBY_PRESET_ID]: {
     id: HOTEL_LOBBY_PRESET_ID,
@@ -262,6 +288,26 @@ const PRESETS = {
     aspectRatio: '16:9',
     enabled: true,
     promptFor: build58thFloorPrompt,
+  },
+  [BICEP_HEART_PRESET_ID]: {
+    id: BICEP_HEART_PRESET_ID,
+    version: 2,
+    displayName: 'Bicep Heart Trend',
+    creditDescription: 'Reserve credits for Bicep Heart Trend AI generation',
+    templateVideoKey: BICEP_HEART_TEMPLATE_KEY,
+    localTemplatePath: 'public/videos/bicep-heart-tpl.mp4',
+    previewUrl: '/api/genjutsu/template?product=bicep-heart',
+    posterUrl: '/videos/bicep-heart-tpl-poster.jpg',
+    downloadPrefix: 'bicep-heart',
+    // Preset performance + optional custom clip; one photo only.
+    imageCount: { min: 1, max: 1 },
+    allowCustomVideo: true,
+    allowTrim: false,
+    keepAudio: true,
+    aspectRatio: '9:16',
+    // SEO page ships first; re-enable after Kling prompt swap is tuned.
+    enabled: false,
+    promptFor: buildBicepHeartPrompt,
   },
 } as const satisfies Record<string, HotelLobbyPresetDef>;
 

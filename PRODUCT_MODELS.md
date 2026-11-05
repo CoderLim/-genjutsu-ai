@@ -65,6 +65,7 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 | `/hotel-lobby-ai`           | fal                     | `fal-ai/kling-video/o3/standard/video-to-video/edit`                                        |
 | `/58th-floor-ai-video`      | fal（Hotel Lobby 面板） | 同上                                                                                        |
 | `/bulin-47-ai`              | fal（Hotel Lobby 面板） | 同上                                                                                        |
+| `/bicep-heart-ai`           | fal（Hotel Lobby 面板） | 同上                                                                                        |
 | `/ai-rumpelstiltskin`       | fal（Hotel Lobby 面板） | 同上                                                                                        |
 | `/h3-lab`                   | fal                     | `minimax/h3/reference-to-video`                                                             |
 | `/kairo-bad-times`          | fal                     | 人：`fal-ai/kling-video/v3/standard/motion-control`；宠物：`fal-ai/bytedance/dreamactor/v2` |

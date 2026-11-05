@@ -1,5 +1,5 @@
-import { GENJUTSU_PROMPT_IDEAS } from '@/components/landing/content';
 import { m } from '@/paraglide/messages.js';
+import { GENJUTSU_PROMPT_IDEAS } from '@/components/landing/content';
 
 const PROMPT_COPY = [
   { title: m['site.seo.idea1_title'], prompt: m['site.seo.idea1_prompt'] },
@@ -17,6 +17,7 @@ const PROMPT_COPY = [
   { title: m['site.seo.idea13_title'], prompt: m['site.seo.idea13_prompt'] },
   { title: m['site.seo.idea14_title'], prompt: m['site.seo.idea14_prompt'] },
   { title: m['site.seo.idea15_title'], prompt: m['site.seo.idea15_prompt'] },
+  { title: m['site.seo.idea16_title'], prompt: m['site.seo.idea16_prompt'] },
 ];
 
 export function getLocalizedGenjutsuPromptIdeas() {

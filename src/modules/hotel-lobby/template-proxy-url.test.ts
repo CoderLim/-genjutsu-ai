@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  BICEP_HEART_PRESET_ID,
   BULIN_47_PRESET_ID,
   getHotelLobbyPresetClientDefaults,
   HOTEL_LOBBY_PRESET_ID,
@@ -14,6 +15,7 @@ test('Preview proxy URL product matches each preset Full seal product', () => {
     HOTEL_LOBBY_PRESET_ID,
     RUMPELSTILTSKIN_PRESET_ID,
     BULIN_47_PRESET_ID,
+    BICEP_HEART_PRESET_ID,
   ] as const) {
     const defaults = getHotelLobbyPresetClientDefaults(presetId);
     const proxy = hotelLobbyTemplateProxyUrl(presetId);

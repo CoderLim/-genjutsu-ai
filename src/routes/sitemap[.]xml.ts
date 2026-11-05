@@ -32,6 +32,7 @@ const STATIC_PATHS = [
   '/live-face-swap',
   '/ai-rumpelstiltskin',
   '/bulin-47-ai',
+  '/bicep-heart-ai',
   '/glow-stick-ai',
   '/chipmunks-dance',
   '/blog',
@@ -47,6 +48,8 @@ const LIMITED_STATIC_PATH_LOCALES: Record<string, readonly string[]> = {
   '/ai-rumpelstiltskin': RUMPEL_SEO_LOCALES,
   // Bulin 47's visible editorial content is not fully localized yet.
   '/bulin-47-ai': [baseLocale],
+  // Bicep Heart Trend ships English editorial first.
+  '/bicep-heart-ai': [baseLocale],
   // Glow Stick ships English editorial first.
   '/glow-stick-ai': [baseLocale],
   // 58th Floor ships English editorial first.

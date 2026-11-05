@@ -699,6 +699,10 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
         href: '/bulin-47-ai',
       },
       {
+        label: 'Bicep Heart Trend',
+        href: '/bicep-heart-ai',
+      },
+      {
         label: 'Chipmunks Dance',
         href: '/chipmunks-dance',
       },
@@ -908,6 +912,11 @@ export const GENJUTSU_PROMPT_IDEAS = [
     title: 'Clay material look',
     prompt:
       'Restyle the scene with clay stop-motion materials. Keep the same subject and original timing.',
+  },
+  {
+    title: 'Bicep Heart Trend restyle',
+    prompt:
+      'Keep the same two people and the bicep heart pose. Restyle as 2D anime with a soft rim light and a dark blue background.',
   },
 ] as const;
 

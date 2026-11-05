@@ -380,11 +380,12 @@ export function HotelLobbyGeneratorPanel({
       : aspectRatio === '4:3'
         ? 'aspect-[4/3]'
         : 'aspect-video';
-  // Keep fixed-template media pairs visually matched and capped so 9:16
-  // doesn't dominate the viewport.
-  const fixedMediaFrameClass =
+  // Cap portrait / 4:3 frames so they don't dominate the viewport — also when
+  // custom video is allowed (e.g. bicep-heart 9:16 with a replaceable preset).
+  // Fixed height for 9:16: width follows aspect (≈236px at 420px tall).
+  const mediaFrameClass =
     aspectRatio === '9:16'
-      ? 'mx-auto max-w-[260px]'
+      ? 'mx-auto h-[420px] w-auto max-w-full'
       : aspectRatio === '4:3'
         ? 'mx-auto max-w-md'
         : 'w-full';
@@ -1251,7 +1252,7 @@ export function HotelLobbyGeneratorPanel({
                   className={cn(
                     'relative overflow-hidden rounded-2xl border border-[rgba(204,144,92,0.24)] bg-black',
                     previewAspectClass,
-                    isFixedTemplate ? fixedMediaFrameClass : 'w-full'
+                    mediaFrameClass
                   )}
                 >
                   <video
@@ -1418,7 +1419,7 @@ export function HotelLobbyGeneratorPanel({
                     ? m['site.glow_stick.left']()
                     : usesDualSubjectCopy
                       ? m['site.crazy.first']()
-                      : isFixedTemplate
+                      : maxImages === 1
                         ? m['site.kling.fixed_photo']()
                         : m['site.hotel.first']()
                 }
@@ -1427,7 +1428,7 @@ export function HotelLobbyGeneratorPanel({
                     ? m['site.glow_stick.left_note']()
                     : usesDualSubjectCopy
                       ? m['site.crazy.first_note']()
-                      : isFixedTemplate
+                      : maxImages === 1
                         ? m['site.kling.fixed_photo_note']()
                         : m['site.hotel.first_note']()
                 }
@@ -1444,7 +1445,7 @@ export function HotelLobbyGeneratorPanel({
                 }
                 frameClassName={
                   isFixedTemplate && maxImages === 1
-                    ? fixedMediaFrameClass
+                    ? mediaFrameClass
                     : undefined
                 }
               />

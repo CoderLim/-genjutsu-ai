@@ -96,6 +96,11 @@ const TRENDING_LINKS = [
     poster: '/videos/bulin47-tpl-poster.jpg',
   },
   {
+    label: 'Bicep Heart Trend',
+    href: '/bicep-heart-ai',
+    poster: '/videos/bicep-heart-tpl-poster.jpg',
+  },
+  {
     label: 'Glow Stick AI',
     href: '/glow-stick-ai',
     poster: '/videos/glow-stick-tpl-poster.jpg',

@@ -28,6 +28,12 @@ const STATIC_PAGES: { path: string; title: string; description: string }[] = [
     description: 'One-photo Bulin 47 freestyle AI video generator',
   },
   {
+    path: '/bicep-heart-ai',
+    title: 'Bicep Heart Trend AI Video',
+    description:
+      'One-photo Bicep Heart Trend AI video generator (Hotel Lobby preset, optional custom clip)',
+  },
+  {
     path: '/glow-stick-ai',
     title: 'Glow Stick AI Video',
     description: 'Three-photo glow-stick sync dance AI video generator',

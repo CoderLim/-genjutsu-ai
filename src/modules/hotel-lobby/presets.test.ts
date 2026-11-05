@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  BICEP_HEART_PRESET_ID,
   build58thFloorPrompt,
+  buildBicepHeartPrompt,
   buildBulin47Prompt,
   buildCrazyFrogPrompt,
   buildGlowStickPrompt,
@@ -118,6 +120,32 @@ test('58th-floor preset mirrors hotel-lobby: 1–2 photos, custom video, no trim
   assert.match(preset.templateVideoKey, /58th-floor-v1\.mp4$/);
 });
 
+test('bicep-heart preset is one photo, custom video, portrait (generate disabled)', () => {
+  const preset = resolveHotelLobbyPreset(BICEP_HEART_PRESET_ID, {
+    requireEnabled: false,
+  });
+  assert.equal(preset.id, BICEP_HEART_PRESET_ID);
+  assert.equal(preset.imageCount.min, 1);
+  assert.equal(preset.imageCount.max, 1);
+  assert.equal(preset.allowCustomVideo, true);
+  assert.equal(preset.allowTrim, false);
+  assert.equal(preset.keepAudio, true);
+  assert.equal(preset.aspectRatio, '9:16');
+  assert.equal(preset.enabled, false);
+  assert.equal(preset.previewUrl, '/api/genjutsu/template?product=bicep-heart');
+  assert.equal(preset.downloadPrefix, 'bicep-heart');
+  assert.equal(preset.localTemplatePath, 'public/videos/bicep-heart-tpl.mp4');
+  assert.equal(preset.posterUrl, '/videos/bicep-heart-tpl-poster.jpg');
+  assert.match(preset.templateVideoKey, /bicep-heart-v1\.mp4$/);
+});
+
+test('disabled bicep-heart rejects generate when requireEnabled', () => {
+  assert.throws(
+    () => resolveHotelLobbyPreset(BICEP_HEART_PRESET_ID),
+    /not available|disabled|Bicep Heart/i
+  );
+});
+
 test('all hotel-lobby presets keep audio by default', () => {
   for (const id of [
     HOTEL_LOBBY_PRESET_ID,
@@ -126,6 +154,7 @@ test('all hotel-lobby presets keep audio by default', () => {
     BULIN_47_PRESET_ID,
     GLOW_STICK_PRESET_ID,
     FIFTY_EIGHTH_FLOOR_PRESET_ID,
+    BICEP_HEART_PRESET_ID,
   ] as const) {
     assert.equal(
       resolveHotelLobbyPreset(id, { requireEnabled: false }).keepAudio,
@@ -161,6 +190,7 @@ test('isHotelLobbyPresetId derives from registry', () => {
   assert.equal(isHotelLobbyPresetId('bulin-47'), true);
   assert.equal(isHotelLobbyPresetId('glow-stick'), true);
   assert.equal(isHotelLobbyPresetId('58th-floor'), true);
+  assert.equal(isHotelLobbyPresetId('bicep-heart'), true);
   assert.equal(isHotelLobbyPresetId('zombie-hug'), false);
 });
 
@@ -223,6 +253,19 @@ test('58th-floor prompt names teal studio and left/right Elements', () => {
   assert.match(prompt, /right performer/i);
   assert.match(prompt, /do not keep the original right performer/i);
   assert.throws(() => build58thFloorPrompt(3), HotelLobbyPreflightError);
+});
+
+test('bicep-heart prompt hard-replaces the original woman cues', () => {
+  const prompt = buildBicepHeartPrompt(1);
+  assert.match(prompt, /@Video1/);
+  assert.match(prompt, /@Element1/);
+  assert.match(prompt, /Replace the main character with @Element1/i);
+  assert.match(prompt, /reddish-brown hair|white t-shirt/i);
+  assert.match(prompt, /hand-on-bicep|bicep-heart/i);
+  assert.match(prompt, /do not keep her face/i);
+  assert.match(prompt, /never the original woman/i);
+  assert.doesNotMatch(prompt, /@Image1/);
+  assert.throws(() => buildBicepHeartPrompt(2), HotelLobbyPreflightError);
 });
 
 test('public meta includes UI fields', () => {
