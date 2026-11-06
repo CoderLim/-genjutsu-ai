@@ -1,15 +1,15 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { WandSparkles } from 'lucide-react';
 
-import { BICEP_HEART_PRESET_ID } from '@/modules/hotel-lobby/presets';
+import { resolveBicepHeartAiProviderTarget } from '@/modules/bicep-heart-ai/provider';
 import { absoluteUrl, localeLinks, socialMeta } from '@/lib/seo';
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
+import { BicepHeartAiGeneratorPanel } from '@/components/landing/BicepHeartGeneratorPanel';
 import {
   BICEP_HEART_FAQ_ITEMS,
   BicepHeartSeoSections,
 } from '@/components/landing/BicepHeartSeoSections';
-import { HotelLobbyGeneratorPanel } from '@/components/landing/HotelLobbyGeneratorPanel';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SeoJsonLd } from '@/components/seo-json-ld';
@@ -56,6 +56,7 @@ function breadcrumbJsonLd(canonical: string) {
 }
 
 function BicepHeartAiPage() {
+  const { creditProvider } = Route.useLoaderData();
   const canonical = absoluteUrl(PAGE_PATH);
 
   return (
@@ -85,7 +86,7 @@ function BicepHeartAiPage() {
             id="generator"
             className="mx-auto mt-8 w-full max-w-5xl scroll-mt-24 text-left sm:mt-10"
           >
-            <HotelLobbyGeneratorPanel presetId={BICEP_HEART_PRESET_ID} />
+            <BicepHeartAiGeneratorPanel creditProvider={creditProvider} />
           </div>
         </section>
       </div>
@@ -112,7 +113,8 @@ export const Route = createFileRoute('/bicep-heart-ai')({
   },
   loader: () => {
     const locale = getLocale();
-    return { locale };
+    const target = resolveBicepHeartAiProviderTarget();
+    return { locale, creditProvider: target.provider };
   },
   head: ({ loaderData }) => {
     const locale = loaderData?.locale ?? 'en';

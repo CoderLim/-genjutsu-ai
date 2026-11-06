@@ -973,6 +973,13 @@ export function getChipmunksDanceTemplateVideoKey() {
   );
 }
 
+export function getBicepHeartTemplateVideoKey() {
+  return (
+    envConfigs.bicep_heart_template_video_key?.trim() ||
+    'genjutsu/templates/bicep-heart-v1.mp4'
+  );
+}
+
 export function getBurningBridgesAiTemplateVideoKey() {
   return (
     envConfigs.burning_bridges_ai_template_video_key?.trim() ||
@@ -1132,6 +1139,14 @@ export async function ensureChipmunksDanceTemplateInR2() {
   });
 }
 
+export async function ensureBicepHeartTemplateInR2() {
+  return ensureGenjutsuPublicTemplateInR2({
+    key: getBicepHeartTemplateVideoKey(),
+    localRelative: 'public/videos/bicep-heart-tpl.mp4',
+    label: 'Bicep Heart',
+  });
+}
+
 export async function ensureBurningBridgesAiTemplateInR2() {
   return ensureGenjutsuPublicTemplateInR2({
     key: getBurningBridgesAiTemplateVideoKey(),
@@ -1205,6 +1220,8 @@ export function getGenjutsuProductTemplateVideoKey(
       return getGlowStickAiTemplateVideoKey();
     case 'chipmunks-dance':
       return getChipmunksDanceTemplateVideoKey();
+    case 'bicep-heart':
+      return getBicepHeartTemplateVideoKey();
     default: {
       const _exhaustive: never = product;
       throw new Error(
@@ -1251,6 +1268,8 @@ export async function ensureGenjutsuProductTemplateInR2(
       return ensureGlowStickAiTemplateInR2();
     case 'chipmunks-dance':
       return ensureChipmunksDanceTemplateInR2();
+    case 'bicep-heart':
+      return ensureBicepHeartTemplateInR2();
     default: {
       const _exhaustive: never = product;
       throw new Error(
@@ -1346,6 +1365,7 @@ export async function sealGenjutsuTemplateR2Inputs(params: {
   const glowStickAiKey = getGlowStickAiTemplateVideoKey();
   const chipmunksDanceKey = getChipmunksDanceTemplateVideoKey();
   const burningBridgesAiKey = getBurningBridgesAiTemplateVideoKey();
+  const bicepHeartKey = getBicepHeartTemplateVideoKey();
   const tinyDeskAiKey = getTinyDeskAiTemplateVideoKey();
   const templateVideoKey =
     params.templateVideoKey === landscapeKey
@@ -1374,9 +1394,11 @@ export async function sealGenjutsuTemplateR2Inputs(params: {
                             ? await ensureChipmunksDanceTemplateInR2()
                             : params.templateVideoKey === burningBridgesAiKey
                               ? await ensureBurningBridgesAiTemplateInR2()
-                              : params.templateVideoKey === tinyDeskAiKey
-                                ? await ensureTinyDeskAiTemplateInR2()
-                                : params.templateVideoKey;
+                              : params.templateVideoKey === bicepHeartKey
+                                ? await ensureBicepHeartTemplateInR2()
+                                : params.templateVideoKey === tinyDeskAiKey
+                                  ? await ensureTinyDeskAiTemplateInR2()
+                                  : params.templateVideoKey;
 
   assertSafeObjectKey(templateVideoKey);
   if (!templateVideoKey.startsWith('genjutsu/')) {

@@ -120,7 +120,7 @@ test('58th-floor preset mirrors hotel-lobby: 1–2 photos, custom video, no trim
   assert.match(preset.templateVideoKey, /58th-floor-v1\.mp4$/);
 });
 
-test('bicep-heart preset is one photo, custom video, portrait (generate disabled)', () => {
+test('bicep-heart hotel-lobby preset disabled after Genjutsu Light migrate', () => {
   const preset = resolveHotelLobbyPreset(BICEP_HEART_PRESET_ID, {
     requireEnabled: false,
   });
@@ -137,9 +137,6 @@ test('bicep-heart preset is one photo, custom video, portrait (generate disabled
   assert.equal(preset.localTemplatePath, 'public/videos/bicep-heart-tpl.mp4');
   assert.equal(preset.posterUrl, '/videos/bicep-heart-tpl-poster.jpg');
   assert.match(preset.templateVideoKey, /bicep-heart-v1\.mp4$/);
-});
-
-test('disabled bicep-heart rejects generate when requireEnabled', () => {
   assert.throws(
     () => resolveHotelLobbyPreset(BICEP_HEART_PRESET_ID),
     /not available|disabled|Bicep Heart/i

@@ -26,7 +26,8 @@ export type GenjutsuProductId =
   | 'tiny-desk-ai'
   | 'shan-shen-bu'
   | 'glow-stick'
-  | 'chipmunks-dance';
+  | 'chipmunks-dance'
+  | 'bicep-heart';
 
 export type GenjutsuProviderTarget = {
   provider: GenjutsuProvider;

@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   A2O_LITE_AI_PRODUCT,
+  BICEP_HEART_PRODUCT,
   BURNING_BRIDGES_AI_PRODUCT,
   CHIPMUNKS_DANCE_PRODUCT,
   COLDPLAY_KISS_CAM_PRODUCT,
@@ -130,6 +131,15 @@ test('tiny-desk-ai follows homepage objects-swap (ignores product provider)', ()
   assert.deepEqual(target, fallback);
 });
 
+test('bicep-heart follows homepage objects-swap (ignores product provider)', () => {
+  const fallback = resolveGenjutsuProviderTarget('objects-swap');
+  const target = resolveProductProviderTarget(
+    BICEP_HEART_PRODUCT,
+    'objects-swap'
+  );
+  assert.deepEqual(target, fallback);
+});
+
 test('burning-bridges-ai follows the mode env router', () => {
   const fallback = resolveGenjutsuProviderTarget('objects-swap');
   const target = resolveProductProviderTarget(
@@ -190,6 +200,7 @@ test('isGenjutsuProductId allowlist', () => {
   assert.equal(isGenjutsuProductId(GAS_STATION_DANCE_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(GLOW_STICK_PRODUCT), true);
   assert.equal(isGenjutsuProductId(CHIPMUNKS_DANCE_PRODUCT), true);
+  assert.equal(isGenjutsuProductId(BICEP_HEART_PRODUCT), true);
   assert.equal(isGenjutsuProductId(BURNING_BRIDGES_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(SAY_IT_RIGHT_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(ZOMBIE_HUG_PRODUCT), true);

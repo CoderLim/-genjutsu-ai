@@ -5,6 +5,7 @@ import { getGenjutsuProductTemplateVideoKey } from './storage';
 import type { GenjutsuProductId } from './types';
 import {
   A2O_LITE_AI_PRODUCT,
+  BICEP_HEART_PRODUCT,
   BURNING_BRIDGES_AI_PRODUCT,
   CHIPMUNKS_DANCE_PRODUCT,
   COLDPLAY_KISS_CAM_PRODUCT,
@@ -33,6 +34,7 @@ const ALL_PRODUCTS: GenjutsuProductId[] = [
   GAS_STATION_DANCE_AI_PRODUCT,
   GLOW_STICK_PRODUCT,
   CHIPMUNKS_DANCE_PRODUCT,
+  BICEP_HEART_PRODUCT,
   BURNING_BRIDGES_AI_PRODUCT,
   SAY_IT_RIGHT_AI_PRODUCT,
   ZOMBIE_HUG_PRODUCT,
@@ -102,6 +104,10 @@ test('product id is reflected in its default template key path', () => {
   assert.match(
     getGenjutsuProductTemplateVideoKey(CHIPMUNKS_DANCE_PRODUCT),
     /chipmunks-dance/
+  );
+  assert.match(
+    getGenjutsuProductTemplateVideoKey(BICEP_HEART_PRODUCT),
+    /bicep-heart/
   );
   assert.match(
     getGenjutsuProductTemplateVideoKey(BURNING_BRIDGES_AI_PRODUCT),

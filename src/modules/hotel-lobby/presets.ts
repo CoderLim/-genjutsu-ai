@@ -298,7 +298,7 @@ const PRESETS = {
     allowTrim: false,
     keepAudio: true,
     aspectRatio: '9:16',
-    // SEO page ships first; re-enable after Kling prompt swap is tuned.
+    // Migrated to Genjutsu Light (`/api/genjutsu/*`, product=bicep-heart).
     enabled: false,
     promptFor: buildBicepHeartPrompt,
   },

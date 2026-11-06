@@ -7,6 +7,12 @@ import {
   A2O_LITE_AI_PRODUCT_ID,
   A2O_LITE_AI_RESOLUTIONS,
 } from '@/modules/a2o-lite-ai/constants';
+import { isAllowedBicepHeartAiPrompt } from '@/modules/bicep-heart-ai/assert';
+import {
+  BICEP_HEART_AI_MODE,
+  BICEP_HEART_AI_PRODUCT_ID,
+  BICEP_HEART_AI_RESOLUTIONS,
+} from '@/modules/bicep-heart-ai/constants';
 import { isAllowedBurningBridgesAiPrompt } from '@/modules/burning-bridges-ai/assert';
 import {
   BURNING_BRIDGES_AI_MODE,
@@ -435,6 +441,31 @@ async function POST({ request }: { request: Request }) {
     if (isChipmunksDance && !isAllowedChipmunksDancePrompt(prompt)) {
       return respErr(
         'Chipmunks Dance prompt does not match the fixed product prompt',
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const isBicepHeartAi = product === BICEP_HEART_AI_PRODUCT_ID;
+    if (isBicepHeartAi && mode !== BICEP_HEART_AI_MODE) {
+      return respErr('Bicep Heart AI only supports objects-swap', {
+        status: 400,
+      });
+    }
+    if (
+      isBicepHeartAi &&
+      !BICEP_HEART_AI_RESOLUTIONS.includes(
+        resolution as (typeof BICEP_HEART_AI_RESOLUTIONS)[number]
+      )
+    ) {
+      return respErr('Bicep Heart AI only supports 480p and 720p', {
+        status: 400,
+      });
+    }
+    if (isBicepHeartAi && !isAllowedBicepHeartAiPrompt(prompt)) {
+      return respErr(
+        'Bicep Heart AI prompt does not match the fixed product prompt',
         {
           status: 400,
         }

@@ -94,7 +94,7 @@ export const MOTION_TEMPLATES: MotionTemplate[] = [
     id: 'bicep-heart',
     titleKey: 'site.templates.bicep_heart',
     poster: '/videos/bicep-heart-tpl-poster.jpg',
-    // Link card only — product page uses homepage Genjutsu Motion Transfer.
+    // Link card only — product page uses Genjutsu Light objects-swap.
     sourceVideo: '/videos/bicep-heart-tpl.mp4',
     href: '/bicep-heart-ai',
     aspect: 'portrait',

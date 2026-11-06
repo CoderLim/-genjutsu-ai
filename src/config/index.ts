@@ -258,6 +258,11 @@ export const envConfigs: Record<string, string> = {
     procEnv.CHIPMUNKS_DANCE_TEMPLATE_VIDEO_KEY ??
     'genjutsu/templates/chipmunks-dance-v1.mp4',
 
+  // Bicep Heart (server-only). Homepage Genjutsu Light objects-swap; one image.
+  bicep_heart_template_video_key:
+    procEnv.BICEP_HEART_TEMPLATE_VIDEO_KEY ??
+    'genjutsu/templates/bicep-heart-v1.mp4',
+
   // Burning Bridges AI (server-only). Fixed R2 template; client uploads one image.
   burning_bridges_ai_template_video_key:
     procEnv.BURNING_BRIDGES_AI_TEMPLATE_VIDEO_KEY ??

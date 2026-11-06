@@ -54,6 +54,7 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 | `/say-it-right-ai`                    | `say-it-right-ai`      | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
 | `/ai-zombie-hug`                      | `zombie-hug`           | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
 | `/tiny-desk-ai`                       | `tiny-desk-ai`         | objects-swap    | mode env（忽略 PRODUCT_PROVIDER） | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
+| `/bicep-heart-ai`                     | `bicep-heart`          | objects-swap    | mode env（忽略 PRODUCT_PROVIDER） | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
 | `/shan-shen-bu`（`/shanshenbu` 别名） | `shan-shen-bu`         | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
 
 计费：首页走 Genjutsu（`higgsfield`）estimate / list；内页走 Seedance / WaveSpeed 报价。不为 Light 单独拆价。
@@ -65,7 +66,6 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 | `/hotel-lobby-ai`           | fal                     | `fal-ai/kling-video/o3/standard/video-to-video/edit`                                        |
 | `/58th-floor-ai-video`      | fal（Hotel Lobby 面板） | 同上                                                                                        |
 | `/bulin-47-ai`              | fal（Hotel Lobby 面板） | 同上                                                                                        |
-| `/bicep-heart-ai`           | fal（Hotel Lobby 面板） | 同上                                                                                        |
 | `/ai-rumpelstiltskin`       | fal（Hotel Lobby 面板） | 同上                                                                                        |
 | `/h3-lab`                   | fal                     | `minimax/h3/reference-to-video`                                                             |
 | `/kairo-bad-times`          | fal                     | 人：`fal-ai/kling-video/v3/standard/motion-control`；宠物：`fal-ai/bytedance/dreamactor/v2` |

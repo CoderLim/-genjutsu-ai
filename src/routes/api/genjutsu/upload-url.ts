@@ -12,6 +12,17 @@ import {
   A2oLiteAiProviderBindingError,
   assertA2oLiteAiProviderBinding,
 } from '@/modules/a2o-lite-ai/provider';
+import { isAllowedBicepHeartAiPrompt } from '@/modules/bicep-heart-ai/assert';
+import {
+  BICEP_HEART_AI_ASPECT_RATIO,
+  BICEP_HEART_AI_MODE,
+  BICEP_HEART_AI_PRODUCT_ID,
+  BICEP_HEART_AI_RESOLUTIONS,
+} from '@/modules/bicep-heart-ai/constants';
+import {
+  assertBicepHeartAiProviderBinding,
+  BicepHeartAiProviderBindingError,
+} from '@/modules/bicep-heart-ai/provider';
 import { isAllowedBurningBridgesAiPrompt } from '@/modules/burning-bridges-ai/assert';
 import {
   BURNING_BRIDGES_AI_ASPECT_RATIO,
@@ -112,6 +123,7 @@ import {
   createGenjutsuProxyUploadDescriptor,
   createGenjutsuR2UploadDescriptor,
   ensureA2oLiteAiTemplateInR2,
+  ensureBicepHeartTemplateInR2,
   ensureBurningBridgesAiTemplateInR2,
   ensureChipmunksDanceTemplateInR2,
   ensureColdplayKissCamTemplateInR2,
@@ -128,6 +140,7 @@ import {
   ensureZombieHugTemplateInR2,
   GENJUTSU_PROXY_UPLOAD_MAX_BYTES,
   getA2oLiteAiTemplateVideoKey,
+  getBicepHeartTemplateVideoKey,
   getBurningBridgesAiTemplateVideoKey,
   getChipmunksDanceTemplateVideoKey,
   getColdplayKissCamTemplateVideoKey,
@@ -251,6 +264,7 @@ async function POST({ request }: { request: Request }) {
     const isA2oLiteAi = product === A2O_LITE_AI_PRODUCT_ID;
     const isEnzoFernandezAi = product === ENZO_FERNANDEZ_AI_PRODUCT_ID;
     const isBurningBridgesAi = product === BURNING_BRIDGES_AI_PRODUCT_ID;
+    const isBicepHeartAi = product === BICEP_HEART_AI_PRODUCT_ID;
     const isTinyDeskAi = product === TINY_DESK_AI_PRODUCT_ID;
     const isSayItRightAi = product === SAY_IT_RIGHT_AI_PRODUCT_ID;
     const isFlyingCarAi = product === FLYING_CAR_AI_PRODUCT_ID;
@@ -271,12 +285,14 @@ async function POST({ request }: { request: Request }) {
       isFlyingCarAi ||
       isShanShenBu ||
       isBurningBridgesAi ||
+      isBicepHeartAi ||
       isSayItRightAi;
     const isProductPreview =
       (isCrazyFrog ||
         isA2oLiteAi ||
         isEnzoFernandezAi ||
         isBurningBridgesAi ||
+        isBicepHeartAi ||
         isTinyDeskAi ||
         isSayItRightAi ||
         isFlyingCarAi ||
@@ -297,6 +313,7 @@ async function POST({ request }: { request: Request }) {
         isA2oLiteAi ||
         isEnzoFernandezAi ||
         isBurningBridgesAi ||
+        isBicepHeartAi ||
         isTinyDeskAi ||
         isSayItRightAi ||
         isFlyingCarAi ||
@@ -381,11 +398,13 @@ async function POST({ request }: { request: Request }) {
                             ? 'Enzo Fernandez AI preview must use 480p'
                             : isBurningBridgesAi
                               ? 'Burning Bridges AI preview must use 480p'
-                              : isSayItRightAi
-                                ? 'Say It Right AI preview must use 480p'
-                                : isSmalltown
-                                  ? 'Smalltown Boy Dance preview must use 480p'
-                                  : 'Crazy Frog preview must use 480p',
+                              : isBicepHeartAi
+                                ? 'Bicep Heart AI preview must use 480p'
+                                : isSayItRightAi
+                                  ? 'Say It Right AI preview must use 480p'
+                                  : isSmalltown
+                                    ? 'Smalltown Boy Dance preview must use 480p'
+                                    : 'Crazy Frog preview must use 480p',
         { status: 400 }
       );
     }
@@ -685,6 +704,30 @@ async function POST({ request }: { request: Request }) {
       );
     }
 
+    if (isBicepHeartAi && mode !== BICEP_HEART_AI_MODE) {
+      return respErr('Bicep Heart AI only supports objects-swap', {
+        status: 400,
+      });
+    }
+    if (
+      isBicepHeartAi &&
+      !BICEP_HEART_AI_RESOLUTIONS.includes(
+        resolution as (typeof BICEP_HEART_AI_RESOLUTIONS)[number]
+      )
+    ) {
+      return respErr('Bicep Heart AI only supports 480p and 720p', {
+        status: 400,
+      });
+    }
+    if (isBicepHeartAi && !isAllowedBicepHeartAiPrompt(prompt)) {
+      return respErr(
+        'Bicep Heart AI prompt does not match the fixed product prompt',
+        {
+          status: 400,
+        }
+      );
+    }
+
     const contentTypes = Array.isArray(body.contentTypes)
       ? body.contentTypes.filter(
           (value: unknown): value is string => typeof value === 'string'
@@ -719,11 +762,13 @@ async function POST({ request }: { request: Request }) {
                           ? 'Enzo Fernandez AI'
                           : isBurningBridgesAi
                             ? 'Burning Bridges AI'
-                            : isSayItRightAi
-                              ? 'Say It Right AI'
-                              : isSmalltown
-                                ? 'Smalltown Boy Dance'
-                                : 'Crazy Frog';
+                            : isBicepHeartAi
+                              ? 'Bicep Heart AI'
+                              : isSayItRightAi
+                                ? 'Say It Right AI'
+                                : isSmalltown
+                                  ? 'Smalltown Boy Dance'
+                                  : 'Crazy Frog';
       const previewImageCount = isTinyDeskAi
         ? Math.max(0, contentTypes.length - 1)
         : isSingleImageProduct
@@ -878,6 +923,8 @@ async function POST({ request }: { request: Request }) {
           await ensureEnzoFernandezAiTemplateInR2();
         } else if (isBurningBridgesAi) {
           await ensureBurningBridgesAiTemplateInR2();
+        } else if (isBicepHeartAi) {
+          await ensureBicepHeartTemplateInR2();
         } else if (isTinyDeskAi) {
           await ensureTinyDeskAiTemplateInR2();
         } else if (isSayItRightAi) {
@@ -913,11 +960,13 @@ async function POST({ request }: { request: Request }) {
                                   ? 'Enzo Fernandez AI template is not configured in R2.'
                                   : isBurningBridgesAi
                                     ? 'Burning Bridges AI template is not configured in R2.'
-                                    : isTinyDeskAi
-                                      ? 'Tiny Desk AI template is not configured in R2.'
-                                      : isSayItRightAi
-                                        ? 'Say It Right AI template is not configured in R2.'
-                                        : 'Smalltown Boy Dance template is not configured in R2.'),
+                                    : isBicepHeartAi
+                                      ? 'Bicep Heart AI template is not configured in R2.'
+                                      : isTinyDeskAi
+                                        ? 'Tiny Desk AI template is not configured in R2.'
+                                        : isSayItRightAi
+                                          ? 'Say It Right AI template is not configured in R2.'
+                                          : 'Smalltown Boy Dance template is not configured in R2.'),
           { code: 'TEMPLATE_NOT_CONFIGURED' },
           { status: 503 }
         );
@@ -968,6 +1017,9 @@ async function POST({ request }: { request: Request }) {
     }
     if (isBurningBridgesAi && existing) {
       assertBurningBridgesAiProviderBinding(existing.provider, existing.model);
+    }
+    if (isBicepHeartAi && existing) {
+      assertBicepHeartAiProviderBinding(existing.provider, existing.model);
     }
     if (isTinyDeskAi && existing) {
       assertTinyDeskAiProviderBinding(existing.provider, existing.model);
@@ -1041,11 +1093,13 @@ async function POST({ request }: { request: Request }) {
                           ? ENZO_FERNANDEZ_AI_ASPECT_RATIO
                           : isBurningBridgesAi
                             ? BURNING_BRIDGES_AI_ASPECT_RATIO
-                            : isTinyDeskAi
-                              ? TINY_DESK_AI_ASPECT_RATIO
-                              : isSayItRightAi
-                                ? SAY_IT_RIGHT_AI_ASPECT_RATIO
-                                : SMALLTOWN_ASPECT_RATIO;
+                            : isBicepHeartAi
+                              ? BICEP_HEART_AI_ASPECT_RATIO
+                              : isTinyDeskAi
+                                ? TINY_DESK_AI_ASPECT_RATIO
+                                : isSayItRightAi
+                                  ? SAY_IT_RIGHT_AI_ASPECT_RATIO
+                                  : SMALLTOWN_ASPECT_RATIO;
 
     if (isFixedTemplateProduct) {
       await bindGenjutsuUploadInputs({
@@ -1095,13 +1149,15 @@ async function POST({ request }: { request: Request }) {
                               ? ENZO_FERNANDEZ_AI_ASPECT_RATIO
                               : isBurningBridgesAi
                                 ? BURNING_BRIDGES_AI_ASPECT_RATIO
-                                : isTinyDeskAi
-                                  ? TINY_DESK_AI_ASPECT_RATIO
-                                  : isSayItRightAi
-                                    ? SAY_IT_RIGHT_AI_ASPECT_RATIO
-                                    : isSmalltown
-                                      ? SMALLTOWN_ASPECT_RATIO
-                                      : CRAZY_FROG_ASPECT_RATIO
+                                : isBicepHeartAi
+                                  ? BICEP_HEART_AI_ASPECT_RATIO
+                                  : isTinyDeskAi
+                                    ? TINY_DESK_AI_ASPECT_RATIO
+                                    : isSayItRightAi
+                                      ? SAY_IT_RIGHT_AI_ASPECT_RATIO
+                                      : isSmalltown
+                                        ? SMALLTOWN_ASPECT_RATIO
+                                        : CRAZY_FROG_ASPECT_RATIO
           : undefined,
         videoKey: normalizedInputs[0].key,
         imageKeys: normalizedInputs.slice(1).map((item) => item.key),
@@ -1158,6 +1214,7 @@ async function POST({ request }: { request: Request }) {
       error instanceof A2oLiteAiProviderBindingError ||
       error instanceof EnzoFernandezAiProviderBindingError ||
       error instanceof BurningBridgesAiProviderBindingError ||
+      error instanceof BicepHeartAiProviderBindingError ||
       error instanceof TinyDeskAiProviderBindingError ||
       error instanceof TinyDeskAiProviderBindingError ||
       error instanceof SayItRightAiProviderBindingError ||
