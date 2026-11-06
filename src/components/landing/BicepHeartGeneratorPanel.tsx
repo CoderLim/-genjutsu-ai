@@ -364,7 +364,7 @@ function PhotoSlot({
         }}
       />
       {item ? (
-        <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/10 bg-black">
+        <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/10 bg-black">
           <img src={item.url} alt={label} className="size-full object-cover" />
           <button
             type="button"
@@ -382,7 +382,7 @@ function PhotoSlot({
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
           aria-label={label}
-          className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/18 bg-white/[0.03] text-center transition hover:border-white/35 hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-white/18 bg-white/[0.03] text-center transition hover:border-white/35 hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span className="flex size-11 items-center justify-center rounded-full bg-white/8 text-white/70">
             <ImageModeIcon className="size-5" />
@@ -996,12 +996,15 @@ export function BicepHeartAiGeneratorPanel({
   return (
     <div className="mx-auto w-full max-w-[1120px]">
       <div className="overflow-hidden rounded-[26px] border border-white/10 bg-[rgba(30,23,19,0.92)] shadow-[0_30px_90px_-30px_rgba(0,0,0,0.85)] backdrop-blur-2xl">
-        <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="grid gap-0 lg:grid-cols-2 lg:items-center">
           <div className="flex items-center justify-center border-b border-white/8 p-4 sm:p-5 lg:border-r lg:border-b-0">
+            {/*
+              Cap width so 9:16 stays within one viewport (240 * 16/9 ≈ 427px).
+            */}
             <FixedTemplatePreview
               src={BICEP_HEART_AI_TEMPLATE_DISPLAY_PATH}
               poster={BICEP_HEART_AI_TEMPLATE_POSTER_PATH}
-              className="relative mx-auto aspect-[4/3] max-h-[420px] w-full rounded-2xl border border-white/10"
+              className="relative mx-auto aspect-[9/16] w-full max-w-[min(100%,240px)] rounded-2xl border border-white/10"
               objectFit="contain"
               autoPlay
               loop
@@ -1010,7 +1013,7 @@ export function BicepHeartAiGeneratorPanel({
           </div>
 
           <div className="flex items-center justify-center p-4 sm:p-5">
-            <div className="mx-auto w-full max-w-xs">
+            <div className="mx-auto w-full max-w-[min(100%,240px)]">
               <PhotoSlot
                 item={photo}
                 inputRef={photoInputRef}
@@ -1256,7 +1259,7 @@ export function BicepHeartAiGeneratorPanel({
                 controls
                 autoPlay
                 playsInline
-                className="mx-auto aspect-video max-h-[720px] w-full max-w-full rounded-2xl bg-black object-contain"
+                className="mx-auto aspect-[9/16] max-h-[720px] w-full max-w-md rounded-2xl bg-black object-contain"
               />
             </div>
           ) : null}
