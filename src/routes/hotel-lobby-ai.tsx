@@ -267,6 +267,16 @@ function HotelLobbyAiPage() {
 
             <div id="generator" className="mt-8 text-left sm:mt-10">
               <HotelLobbyGeneratorPanel />
+              <p className="mt-5 text-center text-sm text-white/42">
+                <a
+                  href="https://airapreel.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 font-medium text-[rgb(220,155,99)] transition hover:text-[rgb(235,174,119)]"
+                >
+                  {m['site.hotel.airapreel_cta']()}
+                </a>
+              </p>
             </div>
           </section>
 
