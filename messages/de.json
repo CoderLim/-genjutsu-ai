@@ -1741,6 +1741,8 @@
   "site.generator.video_size_error": "Das Quellvideo darf höchstens 200 MB groß sein",
   "site.generator.video_upload": "Referenzvideo zum Bearbeiten hinzufügen",
   "site.header.blog": "Blog",
+  "site.header.photo_editor": "AI Photo Editor",
+  "site.header.photo_editor_badge": "NEW",
   "site.header.feature": "Funktionen",
   "site.header.how": "So funktioniert’s",
   "site.header.language": "Sprache",

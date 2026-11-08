@@ -24,10 +24,11 @@ import {
 
 const NAV_LINKS = [
   { label: m['site.header.feature'], href: '/#feature' },
-  { label: m['site.header.how'], href: '/#how-it-works' },
   { label: m['site.header.pricing'], href: '/pricing' },
   { label: m['site.header.blog'], href: '/blog' },
 ] as const;
+
+const AI_PHOTO_EDITOR_HREF = 'https://getaiphotoeditor.com/';
 
 const TRENDING_LINKS = [
   {
@@ -180,6 +181,40 @@ function BrandLink({ className }: { className?: string }) {
   );
 }
 
+function NewBadge({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        'rounded bg-[#e05256] px-1 py-px text-[9px] leading-none font-bold text-white',
+        className
+      )}
+    >
+      {m['site.header.photo_editor_badge']()}
+    </span>
+  );
+}
+
+function AiPhotoEditorLink({
+  className,
+  onClick,
+}: {
+  className?: string;
+  onClick?: () => void;
+}) {
+  return (
+    <Link
+      href={AI_PHOTO_EDITOR_HREF}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(navLinkClass, 'relative', className)}
+      onClick={onClick}
+    >
+      {m['site.header.photo_editor']()}
+      <NewBadge className="ml-1.5" />
+    </Link>
+  );
+}
+
 function UpgradePill({ className }: { className?: string }) {
   return (
     <Link
@@ -292,6 +327,7 @@ export function SiteHeader() {
               <Link href="/creations" className={navLinkClass}>
                 {m['creations.nav']()}
               </Link>
+              <AiPhotoEditorLink />
             </div>
           </div>
 
@@ -364,6 +400,10 @@ export function SiteHeader() {
                   >
                     {m['creations.nav']()}
                   </Link>
+                  <AiPhotoEditorLink
+                    className="border-border/60 h-auto justify-start rounded-none border-b px-0 py-3"
+                    onClick={() => setSheetOpen(false)}
+                  />
                   <div className="mt-6 flex flex-col gap-3">
                     <UpgradePill className="w-fit" />
                     <LocaleSelector variant="pill" className="w-fit" />

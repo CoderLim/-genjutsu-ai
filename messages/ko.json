@@ -1741,6 +1741,8 @@
   "site.generator.video_size_error": "원본 동영상은 200MB 이하여야 합니다",
   "site.generator.video_upload": "편집할 참조 동영상 추가",
   "site.header.blog": "블로그",
+  "site.header.photo_editor": "AI Photo Editor",
+  "site.header.photo_editor_badge": "NEW",
   "site.header.feature": "기능",
   "site.header.how": "사용 방법",
   "site.header.language": "언어",

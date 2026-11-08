@@ -1741,6 +1741,8 @@
   "site.generator.video_size_error": "El vídeo de origen debe tener 200 MB como máximo",
   "site.generator.video_upload": "Añade un vídeo de referencia para editar",
   "site.header.blog": "Blog",
+  "site.header.photo_editor": "AI Photo Editor",
+  "site.header.photo_editor_badge": "NEW",
   "site.header.feature": "Funciones",
   "site.header.how": "Cómo funciona",
   "site.header.language": "Idioma",
