@@ -19,6 +19,7 @@ import {
   SHAN_SHEN_BU_PRODUCT,
   SMALLTOWN_BOY_DANCE_PRODUCT,
   TINY_DESK_AI_PRODUCT,
+  WASSUP_IN_A_MINUTE_AI_PRODUCT,
   ZOMBIE_HUG_PRODUCT,
 } from './workflow';
 
@@ -39,6 +40,7 @@ const ALL_PRODUCTS: GenjutsuProductId[] = [
   SAY_IT_RIGHT_AI_PRODUCT,
   ZOMBIE_HUG_PRODUCT,
   TINY_DESK_AI_PRODUCT,
+  WASSUP_IN_A_MINUTE_AI_PRODUCT,
 ];
 
 test('each Genjutsu product maps to a distinct template key', () => {
@@ -124,5 +126,9 @@ test('product id is reflected in its default template key path', () => {
   assert.match(
     getGenjutsuProductTemplateVideoKey(TINY_DESK_AI_PRODUCT),
     /tiny-desk-ai/
+  );
+  assert.match(
+    getGenjutsuProductTemplateVideoKey(WASSUP_IN_A_MINUTE_AI_PRODUCT),
+    /wassup-in-a-minute-ai/
   );
 });

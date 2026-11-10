@@ -44,6 +44,10 @@ import {
   TINY_DESK_AI_TEMPLATE_DISPLAY_PATH,
   TINY_DESK_AI_TEMPLATE_POSTER_PATH,
 } from '@/modules/tiny-desk-ai/constants';
+import {
+  WASSUP_IN_A_MINUTE_AI_TEMPLATE_DISPLAY_PATH,
+  WASSUP_IN_A_MINUTE_AI_TEMPLATE_POSTER_PATH,
+} from '@/modules/wassup-in-a-minute-ai/constants';
 
 type MotionTemplateBase = {
   id: string;
@@ -106,6 +110,15 @@ export const MOTION_TEMPLATES: MotionTemplate[] = [
     sourceVideo: CHIPMUNKS_DANCE_TEMPLATE_DISPLAY_PATH,
     href: '/chipmunks-dance',
     aspect: 'portrait',
+  },
+  {
+    id: 'wassup-in-a-minute-ai',
+    titleKey: 'site.templates.wassup_in_a_minute_ai',
+    poster: WASSUP_IN_A_MINUTE_AI_TEMPLATE_POSTER_PATH,
+    sourceVideo: WASSUP_IN_A_MINUTE_AI_TEMPLATE_DISPLAY_PATH,
+    href: '/wassup-in-a-minute-ai',
+    ctaLabelKey: 'site.templates.wassup_in_a_minute_ai_cta',
+    aspect: 'landscape',
   },
   {
     id: 'glow-stick',

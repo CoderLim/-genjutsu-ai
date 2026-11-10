@@ -263,6 +263,11 @@ export const envConfigs: Record<string, string> = {
     procEnv.BICEP_HEART_TEMPLATE_VIDEO_KEY ??
     'genjutsu/templates/bicep-heart-v1.mp4',
 
+  // Wassup in a Minute AI (server-only). Homepage Genjutsu Light; 1–3 sparse slots.
+  wassup_in_a_minute_ai_template_video_key:
+    procEnv.WASSUP_IN_A_MINUTE_AI_TEMPLATE_VIDEO_KEY ??
+    'genjutsu/templates/wassup-in-a-minute-ai.mp4',
+
   // Burning Bridges AI (server-only). Fixed R2 template; client uploads one image.
   burning_bridges_ai_template_video_key:
     procEnv.BURNING_BRIDGES_AI_TEMPLATE_VIDEO_KEY ??

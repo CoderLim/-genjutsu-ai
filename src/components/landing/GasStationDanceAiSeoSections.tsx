@@ -92,6 +92,10 @@ const RELATED_TEMPLATES = [
     href: '/smalltown-boy-dance',
   },
   {
+    label: () => m['site.gasstation.seo.related_wassup'](),
+    href: '/wassup-in-a-minute-ai',
+  },
+  {
     label: () => m['site.gasstation.seo.related_home'](),
     href: '/',
   },

@@ -27,7 +27,8 @@ export type GenjutsuProductId =
   | 'shan-shen-bu'
   | 'glow-stick'
   | 'chipmunks-dance'
-  | 'bicep-heart';
+  | 'bicep-heart'
+  | 'wassup-in-a-minute-ai';
 
 export type GenjutsuProviderTarget = {
   provider: GenjutsuProvider;

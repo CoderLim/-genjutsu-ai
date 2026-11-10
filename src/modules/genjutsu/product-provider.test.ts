@@ -20,6 +20,7 @@ import {
   SHAN_SHEN_BU_PRODUCT,
   SMALLTOWN_BOY_DANCE_PRODUCT,
   TINY_DESK_AI_PRODUCT,
+  WASSUP_IN_A_MINUTE_AI_PRODUCT,
   ZOMBIE_HUG_PRODUCT,
 } from './workflow';
 
@@ -140,6 +141,15 @@ test('bicep-heart follows homepage objects-swap (ignores product provider)', () 
   assert.deepEqual(target, fallback);
 });
 
+test('wassup-in-a-minute-ai follows homepage objects-swap (ignores product provider)', () => {
+  const fallback = resolveGenjutsuProviderTarget('objects-swap');
+  const target = resolveProductProviderTarget(
+    WASSUP_IN_A_MINUTE_AI_PRODUCT,
+    'objects-swap'
+  );
+  assert.deepEqual(target, fallback);
+});
+
 test('burning-bridges-ai follows the mode env router', () => {
   const fallback = resolveGenjutsuProviderTarget('objects-swap');
   const target = resolveProductProviderTarget(
@@ -205,6 +215,7 @@ test('isGenjutsuProductId allowlist', () => {
   assert.equal(isGenjutsuProductId(SAY_IT_RIGHT_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId(ZOMBIE_HUG_PRODUCT), true);
   assert.equal(isGenjutsuProductId(TINY_DESK_AI_PRODUCT), true);
+  assert.equal(isGenjutsuProductId(WASSUP_IN_A_MINUTE_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId('bulin-47'), false);
   assert.equal(isGenjutsuProductId(''), false);
 });

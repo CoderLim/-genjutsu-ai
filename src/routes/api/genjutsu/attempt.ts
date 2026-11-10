@@ -96,6 +96,12 @@ import {
   TINY_DESK_AI_PRODUCT_ID,
   TINY_DESK_AI_RESOLUTIONS,
 } from '@/modules/tiny-desk-ai/constants';
+import { isAllowedWassupInAMinuteAiPrompt } from '@/modules/wassup-in-a-minute-ai/assert';
+import {
+  WASSUP_IN_A_MINUTE_AI_MODE,
+  WASSUP_IN_A_MINUTE_AI_PRODUCT_ID,
+  WASSUP_IN_A_MINUTE_AI_RESOLUTIONS,
+} from '@/modules/wassup-in-a-minute-ai/constants';
 import { isAllowedZombieHugPrompt } from '@/modules/zombie-hug/assert';
 import {
   ZOMBIE_HUG_MODE,
@@ -417,6 +423,31 @@ async function POST({ request }: { request: Request }) {
     if (isGlowStickAi && !isAllowedGlowStickAiPrompt(prompt)) {
       return respErr(
         'Glow Stick AI prompt does not match the fixed product prompt',
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const isWassupInAMinuteAi = product === WASSUP_IN_A_MINUTE_AI_PRODUCT_ID;
+    if (isWassupInAMinuteAi && mode !== WASSUP_IN_A_MINUTE_AI_MODE) {
+      return respErr('Wassup in a Minute AI only supports objects-swap', {
+        status: 400,
+      });
+    }
+    if (
+      isWassupInAMinuteAi &&
+      !WASSUP_IN_A_MINUTE_AI_RESOLUTIONS.includes(
+        resolution as (typeof WASSUP_IN_A_MINUTE_AI_RESOLUTIONS)[number]
+      )
+    ) {
+      return respErr('Wassup in a Minute AI only supports 480p and 720p', {
+        status: 400,
+      });
+    }
+    if (isWassupInAMinuteAi && !isAllowedWassupInAMinuteAiPrompt(prompt)) {
+      return respErr(
+        'Wassup in a Minute AI prompt does not match the fixed product prompt',
         {
           status: 400,
         }

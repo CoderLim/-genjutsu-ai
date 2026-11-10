@@ -82,6 +82,10 @@ const RELATED_TEMPLATES = [
     href: '/hotel-lobby-ai',
   },
   {
+    label: () => m['site.gangnam.seo.related_wassup'](),
+    href: '/wassup-in-a-minute-ai',
+  },
+  {
     label: () => m['site.gangnam.seo.related_home'](),
     href: '/',
   },

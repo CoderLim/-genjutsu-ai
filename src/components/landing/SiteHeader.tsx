@@ -102,6 +102,11 @@ const TRENDING_LINKS = [
     poster: '/videos/bicep-heart-tpl-poster.jpg',
   },
   {
+    label: 'Wassup in a Minute AI',
+    href: '/wassup-in-a-minute-ai',
+    poster: '/videos/wassup-in-a-minute-ai-tpl-poster.jpg',
+  },
+  {
     label: 'Glow Stick AI',
     href: '/glow-stick-ai',
     poster: '/videos/glow-stick-tpl-poster.jpg',

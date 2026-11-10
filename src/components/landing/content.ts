@@ -707,6 +707,10 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
         href: '/chipmunks-dance',
       },
       {
+        label: 'Wassup in a Minute AI',
+        href: '/wassup-in-a-minute-ai',
+      },
+      {
         label: 'Glow Stick AI',
         href: '/glow-stick-ai',
       },

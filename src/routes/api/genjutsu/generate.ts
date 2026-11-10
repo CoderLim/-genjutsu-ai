@@ -216,6 +216,18 @@ import {
   TinyDeskAiProviderBindingError,
 } from '@/modules/tiny-desk-ai/provider';
 import {
+  assertWassupInAMinuteAiInputs,
+  WassupInAMinuteAiPreflightError,
+} from '@/modules/wassup-in-a-minute-ai/assert';
+import {
+  WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO,
+  WASSUP_IN_A_MINUTE_AI_PRODUCT_ID,
+} from '@/modules/wassup-in-a-minute-ai/constants';
+import {
+  assertWassupInAMinuteAiProviderBinding,
+  WassupInAMinuteAiProviderBindingError,
+} from '@/modules/wassup-in-a-minute-ai/provider';
+import {
   assertZombieHugInputs,
   ZombieHugPreflightError,
 } from '@/modules/zombie-hug/assert';
@@ -542,6 +554,15 @@ async function POST({ request }: { request: Request }) {
       assertGlowStickAiInputs(taskOptions);
       assertGlowStickAiProviderBinding(task.provider, task.model);
     }
+    if (product === WASSUP_IN_A_MINUTE_AI_PRODUCT_ID) {
+      if (!task) {
+        throw new WassupInAMinuteAiPreflightError(
+          'Wassup in a Minute AI generation must start from a saved attempt'
+        );
+      }
+      assertWassupInAMinuteAiInputs(taskOptions);
+      assertWassupInAMinuteAiProviderBinding(task.provider, task.model);
+    }
     if (product === CHIPMUNKS_DANCE_PRODUCT_ID) {
       if (!task) {
         throw new ChipmunksDancePreflightError(
@@ -573,6 +594,7 @@ async function POST({ request }: { request: Request }) {
         product === GANGNAM_STYLE_AI_PRODUCT_ID ||
         product === GAS_STATION_DANCE_AI_PRODUCT_ID ||
         product === GLOW_STICK_AI_PRODUCT_ID ||
+        product === WASSUP_IN_A_MINUTE_AI_PRODUCT_ID ||
         product === CHIPMUNKS_DANCE_PRODUCT_ID ||
         product === ZOMBIE_HUG_PRODUCT_ID) &&
       task
@@ -619,14 +641,16 @@ async function POST({ request }: { request: Request }) {
                                 ? GAS_STATION_DANCE_AI_ASPECT_RATIO
                                 : product === GLOW_STICK_AI_PRODUCT_ID
                                   ? GLOW_STICK_AI_ASPECT_RATIO
-                                  : product === CHIPMUNKS_DANCE_PRODUCT_ID
-                                    ? CHIPMUNKS_DANCE_ASPECT_RATIO
-                                    : product === ZOMBIE_HUG_PRODUCT_ID &&
-                                        isZombieHugAspectRatio(
-                                          taskOptions?.aspectRatio
-                                        )
-                                      ? taskOptions.aspectRatio
-                                      : undefined;
+                                  : product === WASSUP_IN_A_MINUTE_AI_PRODUCT_ID
+                                    ? WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO
+                                    : product === CHIPMUNKS_DANCE_PRODUCT_ID
+                                      ? CHIPMUNKS_DANCE_ASPECT_RATIO
+                                      : product === ZOMBIE_HUG_PRODUCT_ID &&
+                                          isZombieHugAspectRatio(
+                                            taskOptions?.aspectRatio
+                                          )
+                                        ? taskOptions.aspectRatio
+                                        : undefined;
 
     if (isSeedanceFamilyProvider(target.provider) && !hasStorageInput(input)) {
       throw new Error(
@@ -798,6 +822,8 @@ async function POST({ request }: { request: Request }) {
         error instanceof GasStationDanceAiProviderBindingError ||
         error instanceof GlowStickAiPreflightError ||
         error instanceof GlowStickAiProviderBindingError ||
+        error instanceof WassupInAMinuteAiPreflightError ||
+        error instanceof WassupInAMinuteAiProviderBindingError ||
         error instanceof ChipmunksDancePreflightError ||
         error instanceof ChipmunksDanceProviderBindingError ||
         error instanceof ZombieHugPreflightError ||

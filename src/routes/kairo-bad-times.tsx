@@ -94,6 +94,7 @@ const LEGAL_ITEMS = [
 
 const TREND_LINKS = [
   [m['site.kairo.related_crazy'], '/crazy-frog-ai'],
+  [m['site.kairo.related_wassup'], '/wassup-in-a-minute-ai'],
   [m['site.kairo.related_zombie'], '/ai-zombie-hug'],
   [m['site.kairo.related_hotel'], '/hotel-lobby-ai'],
   [m['site.kairo.related_bulin'], '/bulin-47-ai'],

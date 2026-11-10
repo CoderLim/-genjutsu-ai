@@ -43,6 +43,7 @@ import {
   getShanShenBuTemplateVideoKey,
   getSmalltownBoyDanceTemplateVideoKey,
   getTinyDeskAiTemplateVideoKey,
+  getWassupInAMinuteAiTemplateVideoKey,
   getZombieHugTemplateVideoKey,
   sealGenjutsuR2Inputs,
   sealGenjutsuTemplateR2Inputs,
@@ -52,6 +53,7 @@ import { SAY_IT_RIGHT_AI_PRODUCT_ID } from '@/modules/say-it-right-ai/constants'
 import { SHAN_SHEN_BU_PRODUCT_ID } from '@/modules/shan-shen-bu/constants';
 import { SMALLTOWN_PRODUCT_ID } from '@/modules/smalltown-boy-dance/constants';
 import { TINY_DESK_AI_PRODUCT_ID } from '@/modules/tiny-desk-ai/constants';
+import { WASSUP_IN_A_MINUTE_AI_PRODUCT_ID } from '@/modules/wassup-in-a-minute-ai/constants';
 import {
   isZombieHugAspectRatio,
   ZOMBIE_HUG_DEFAULT_ASPECT_RATIO,
@@ -161,16 +163,18 @@ async function POST({ request }: { request: Request }) {
                                 ? getBicepHeartTemplateVideoKey()
                                 : product === TINY_DESK_AI_PRODUCT_ID
                                   ? getTinyDeskAiTemplateVideoKey()
-                                  : product === SAY_IT_RIGHT_AI_PRODUCT_ID
-                                    ? getSayItRightAiTemplateVideoKey()
-                                    : product === ZOMBIE_HUG_PRODUCT_ID
-                                      ? getZombieHugTemplateVideoKey(
-                                          templateAspectRatio
-                                        )
-                                      : // Legacy: useDefaultTemplate without product → zombie keys.
-                                        getZombieHugTemplateVideoKey(
-                                          templateAspectRatio
-                                        );
+                                  : product === WASSUP_IN_A_MINUTE_AI_PRODUCT_ID
+                                    ? getWassupInAMinuteAiTemplateVideoKey()
+                                    : product === SAY_IT_RIGHT_AI_PRODUCT_ID
+                                      ? getSayItRightAiTemplateVideoKey()
+                                      : product === ZOMBIE_HUG_PRODUCT_ID
+                                        ? getZombieHugTemplateVideoKey(
+                                            templateAspectRatio
+                                          )
+                                        : // Legacy: useDefaultTemplate without product → zombie keys.
+                                          getZombieHugTemplateVideoKey(
+                                            templateAspectRatio
+                                          );
     const videoKey =
       typeof currentOptions?.videoKey === 'string'
         ? currentOptions.videoKey

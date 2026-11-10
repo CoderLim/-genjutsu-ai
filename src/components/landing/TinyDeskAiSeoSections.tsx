@@ -88,6 +88,10 @@ const RELATED_LINKS = [
     label: () => m['site.tinydesk.seo.related_crazy'](),
     href: '/crazy-frog-ai',
   },
+  {
+    label: () => m['site.tinydesk.seo.related_wassup'](),
+    href: '/wassup-in-a-minute-ai',
+  },
 ] as const;
 
 function faqAnswer(key: (typeof FAQ_KEYS)[number]['a']) {

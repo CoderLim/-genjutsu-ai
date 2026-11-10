@@ -137,6 +137,7 @@ import {
   ensureShanShenBuTemplateInR2,
   ensureSmalltownBoyDanceTemplateInR2,
   ensureTinyDeskAiTemplateInR2,
+  ensureWassupInAMinuteAiTemplateInR2,
   ensureZombieHugTemplateInR2,
   GENJUTSU_PROXY_UPLOAD_MAX_BYTES,
   getA2oLiteAiTemplateVideoKey,
@@ -155,6 +156,7 @@ import {
   getShanShenBuTemplateVideoKey,
   getSmalltownBoyDanceTemplateVideoKey,
   getTinyDeskAiTemplateVideoKey,
+  getWassupInAMinuteAiTemplateVideoKey,
   getZombieHugTemplateVideoKey,
 } from '@/modules/genjutsu/storage';
 import type { GenjutsuProvider } from '@/modules/genjutsu/types';
@@ -213,6 +215,19 @@ import {
   assertTinyDeskAiProviderBinding,
   TinyDeskAiProviderBindingError,
 } from '@/modules/tiny-desk-ai/provider';
+import { isAllowedWassupInAMinuteAiPrompt } from '@/modules/wassup-in-a-minute-ai/assert';
+import {
+  WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO,
+  WASSUP_IN_A_MINUTE_AI_MAX_IMAGES,
+  WASSUP_IN_A_MINUTE_AI_MIN_IMAGES,
+  WASSUP_IN_A_MINUTE_AI_MODE,
+  WASSUP_IN_A_MINUTE_AI_PRODUCT_ID,
+  WASSUP_IN_A_MINUTE_AI_RESOLUTIONS,
+} from '@/modules/wassup-in-a-minute-ai/constants';
+import {
+  assertWassupInAMinuteAiProviderBinding,
+  WassupInAMinuteAiProviderBindingError,
+} from '@/modules/wassup-in-a-minute-ai/provider';
 import { isAllowedZombieHugPrompt } from '@/modules/zombie-hug/assert';
 import {
   isZombieHugAspectRatio,
@@ -273,6 +288,7 @@ async function POST({ request }: { request: Request }) {
     const isGangnamStyleAi = product === GANGNAM_STYLE_AI_PRODUCT_ID;
     const isGasStationDanceAi = product === GAS_STATION_DANCE_AI_PRODUCT_ID;
     const isGlowStickAi = product === GLOW_STICK_AI_PRODUCT_ID;
+    const isWassupInAMinuteAi = product === WASSUP_IN_A_MINUTE_AI_PRODUCT_ID;
     const isChipmunksDance = product === CHIPMUNKS_DANCE_PRODUCT_ID;
     const isZombieHug = product === ZOMBIE_HUG_PRODUCT_ID;
     const isTripleImageProduct =
@@ -301,6 +317,7 @@ async function POST({ request }: { request: Request }) {
         isGangnamStyleAi ||
         isGasStationDanceAi ||
         isGlowStickAi ||
+        isWassupInAMinuteAi ||
         isChipmunksDance ||
         isZombieHug ||
         isSmalltown) &&
@@ -322,6 +339,7 @@ async function POST({ request }: { request: Request }) {
         isGangnamStyleAi ||
         isGasStationDanceAi ||
         isGlowStickAi ||
+        isWassupInAMinuteAi ||
         isChipmunksDance ||
         isZombieHug) &&
       !isProductPreview;
@@ -335,14 +353,15 @@ async function POST({ request }: { request: Request }) {
         status: 400,
       });
     }
-    // Tiny Desk allows a contiguous 1–5 cast; other fixed templates are exact.
-    const fixedTemplateImageCount = isTinyDeskAi
-      ? null
-      : isSingleImageProduct
-        ? FIXED_TEMPLATE_SINGLE_IMAGE_COUNT
-        : isTripleImageProduct
-          ? FIXED_TEMPLATE_TRIPLE_IMAGE_COUNT
-          : FIXED_TEMPLATE_DUAL_IMAGE_COUNT;
+    // Tiny Desk / Wassup allow variable cast sizes; other fixed templates are exact.
+    const fixedTemplateImageCount =
+      isTinyDeskAi || isWassupInAMinuteAi
+        ? null
+        : isSingleImageProduct
+          ? FIXED_TEMPLATE_SINGLE_IMAGE_COUNT
+          : isTripleImageProduct
+            ? FIXED_TEMPLATE_TRIPLE_IMAGE_COUNT
+            : FIXED_TEMPLATE_DUAL_IMAGE_COUNT;
 
     if (mode !== 'motion-transfer' && mode !== 'objects-swap') {
       return respErr('Invalid Genjutsu mode', { status: 400 });
@@ -388,23 +407,25 @@ async function POST({ request }: { request: Request }) {
                   ? 'Gas Station Dance AI preview must use 480p'
                   : isGlowStickAi
                     ? 'Glow Stick AI preview must use 480p'
-                    : isChipmunksDance
-                      ? 'Chipmunks Dance preview must use 480p'
-                      : isFlyingCarAi
-                        ? 'Flying Car AI preview must use 480p'
-                        : isShanShenBu
-                          ? 'Shan Shen Bu preview must use 480p'
-                          : isEnzoFernandezAi
-                            ? 'Enzo Fernandez AI preview must use 480p'
-                            : isBurningBridgesAi
-                              ? 'Burning Bridges AI preview must use 480p'
-                              : isBicepHeartAi
-                                ? 'Bicep Heart AI preview must use 480p'
-                                : isSayItRightAi
-                                  ? 'Say It Right AI preview must use 480p'
-                                  : isSmalltown
-                                    ? 'Smalltown Boy Dance preview must use 480p'
-                                    : 'Crazy Frog preview must use 480p',
+                    : isWassupInAMinuteAi
+                      ? 'Wassup in a Minute AI preview must use 480p'
+                      : isChipmunksDance
+                        ? 'Chipmunks Dance preview must use 480p'
+                        : isFlyingCarAi
+                          ? 'Flying Car AI preview must use 480p'
+                          : isShanShenBu
+                            ? 'Shan Shen Bu preview must use 480p'
+                            : isEnzoFernandezAi
+                              ? 'Enzo Fernandez AI preview must use 480p'
+                              : isBurningBridgesAi
+                                ? 'Burning Bridges AI preview must use 480p'
+                                : isBicepHeartAi
+                                  ? 'Bicep Heart AI preview must use 480p'
+                                  : isSayItRightAi
+                                    ? 'Say It Right AI preview must use 480p'
+                                    : isSmalltown
+                                      ? 'Smalltown Boy Dance preview must use 480p'
+                                      : 'Crazy Frog preview must use 480p',
         { status: 400 }
       );
     }
@@ -680,6 +701,29 @@ async function POST({ request }: { request: Request }) {
         }
       );
     }
+    if (isWassupInAMinuteAi && mode !== WASSUP_IN_A_MINUTE_AI_MODE) {
+      return respErr('Wassup in a Minute AI only supports objects-swap', {
+        status: 400,
+      });
+    }
+    if (
+      isWassupInAMinuteAi &&
+      !WASSUP_IN_A_MINUTE_AI_RESOLUTIONS.includes(
+        resolution as (typeof WASSUP_IN_A_MINUTE_AI_RESOLUTIONS)[number]
+      )
+    ) {
+      return respErr('Wassup in a Minute AI only supports 480p and 720p', {
+        status: 400,
+      });
+    }
+    if (isWassupInAMinuteAi && !isAllowedWassupInAMinuteAiPrompt(prompt)) {
+      return respErr(
+        'Wassup in a Minute AI prompt does not match the fixed product prompt',
+        {
+          status: 400,
+        }
+      );
+    }
     if (isChipmunksDance && mode !== CHIPMUNKS_DANCE_MODE) {
       return respErr('Chipmunks Dance only supports objects-swap', {
         status: 400,
@@ -769,13 +813,14 @@ async function POST({ request }: { request: Request }) {
                                 : isSmalltown
                                   ? 'Smalltown Boy Dance'
                                   : 'Crazy Frog';
-      const previewImageCount = isTinyDeskAi
-        ? Math.max(0, contentTypes.length - 1)
-        : isSingleImageProduct
-          ? 1
-          : isTripleImageProduct
-            ? 3
-            : 2;
+      const previewImageCount =
+        isTinyDeskAi || isWassupInAMinuteAi
+          ? Math.max(0, contentTypes.length - 1)
+          : isSingleImageProduct
+            ? 1
+            : isTripleImageProduct
+              ? 3
+              : 2;
       const previewUploadCount = previewImageCount + 1;
       if (isTinyDeskAi) {
         if (
@@ -786,6 +831,18 @@ async function POST({ request }: { request: Request }) {
         ) {
           return respErr(
             'Tiny Desk AI preview requires one trimmed video plus 1–5 reference images',
+            { status: 400 }
+          );
+        }
+      } else if (isWassupInAMinuteAi) {
+        if (
+          previewImageCount < WASSUP_IN_A_MINUTE_AI_MIN_IMAGES ||
+          previewImageCount > WASSUP_IN_A_MINUTE_AI_MAX_IMAGES ||
+          contentTypes.length !== previewUploadCount ||
+          contentLengths.length !== previewUploadCount
+        ) {
+          return respErr(
+            'Wassup in a Minute AI preview requires one trimmed video plus 1–3 reference images',
             { status: 400 }
           );
         }
@@ -832,6 +889,16 @@ async function POST({ request }: { request: Request }) {
             status: 400,
           });
         }
+      } else if (isWassupInAMinuteAi) {
+        if (
+          contentTypes.length < WASSUP_IN_A_MINUTE_AI_MIN_IMAGES ||
+          contentTypes.length > WASSUP_IN_A_MINUTE_AI_MAX_IMAGES ||
+          contentLengths.length !== contentTypes.length
+        ) {
+          return respErr('Upload between 1 and 3 reference images', {
+            status: 400,
+          });
+        }
       } else if (
         fixedTemplateImageCount == null ||
         contentTypes.length !== fixedTemplateImageCount ||
@@ -854,7 +921,7 @@ async function POST({ request }: { request: Request }) {
         const mime = contentType.split(';', 1)[0]?.trim().toLowerCase() || '';
         if (!mime.startsWith('image/')) {
           return respErr(
-            isTinyDeskAi
+            isTinyDeskAi || isWassupInAMinuteAi
               ? 'All uploads must be images (JPG, PNG, WebP, or GIF)'
               : isSingleImageProduct
                 ? 'Upload must be an image (JPG, PNG, WebP, or GIF)'
@@ -895,9 +962,11 @@ async function POST({ request }: { request: Request }) {
                                     ? getBurningBridgesAiTemplateVideoKey()
                                     : isTinyDeskAi
                                       ? getTinyDeskAiTemplateVideoKey()
-                                      : isSayItRightAi
-                                        ? getSayItRightAiTemplateVideoKey()
-                                        : getSmalltownBoyDanceTemplateVideoKey()
+                                      : isWassupInAMinuteAi
+                                        ? getWassupInAMinuteAiTemplateVideoKey()
+                                        : isSayItRightAi
+                                          ? getSayItRightAiTemplateVideoKey()
+                                          : getSmalltownBoyDanceTemplateVideoKey()
           );
         } else if (isCrazyFrog) {
           await ensureCrazyFrogTemplateInR2();
@@ -927,6 +996,8 @@ async function POST({ request }: { request: Request }) {
           await ensureBicepHeartTemplateInR2();
         } else if (isTinyDeskAi) {
           await ensureTinyDeskAiTemplateInR2();
+        } else if (isWassupInAMinuteAi) {
+          await ensureWassupInAMinuteAiTemplateInR2();
         } else if (isSayItRightAi) {
           await ensureSayItRightAiTemplateInR2();
         } else {
@@ -1048,6 +1119,9 @@ async function POST({ request }: { request: Request }) {
     if (isGlowStickAi && existing) {
       assertGlowStickAiProviderBinding(existing.provider, existing.model);
     }
+    if (isWassupInAMinuteAi && existing) {
+      assertWassupInAMinuteAiProviderBinding(existing.provider, existing.model);
+    }
     if (isChipmunksDance && existing) {
       assertChipmunksDanceProviderBinding(existing.provider, existing.model);
     }
@@ -1083,23 +1157,25 @@ async function POST({ request }: { request: Request }) {
                 ? GAS_STATION_DANCE_AI_ASPECT_RATIO
                 : isGlowStickAi
                   ? GLOW_STICK_AI_ASPECT_RATIO
-                  : isChipmunksDance
-                    ? CHIPMUNKS_DANCE_ASPECT_RATIO
-                    : isFlyingCarAi
-                      ? FLYING_CAR_AI_ASPECT_RATIO
-                      : isShanShenBu
-                        ? SHAN_SHEN_BU_ASPECT_RATIO
-                        : isEnzoFernandezAi
-                          ? ENZO_FERNANDEZ_AI_ASPECT_RATIO
-                          : isBurningBridgesAi
-                            ? BURNING_BRIDGES_AI_ASPECT_RATIO
-                            : isBicepHeartAi
-                              ? BICEP_HEART_AI_ASPECT_RATIO
-                              : isTinyDeskAi
-                                ? TINY_DESK_AI_ASPECT_RATIO
-                                : isSayItRightAi
-                                  ? SAY_IT_RIGHT_AI_ASPECT_RATIO
-                                  : SMALLTOWN_ASPECT_RATIO;
+                  : isWassupInAMinuteAi
+                    ? WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO
+                    : isChipmunksDance
+                      ? CHIPMUNKS_DANCE_ASPECT_RATIO
+                      : isFlyingCarAi
+                        ? FLYING_CAR_AI_ASPECT_RATIO
+                        : isShanShenBu
+                          ? SHAN_SHEN_BU_ASPECT_RATIO
+                          : isEnzoFernandezAi
+                            ? ENZO_FERNANDEZ_AI_ASPECT_RATIO
+                            : isBurningBridgesAi
+                              ? BURNING_BRIDGES_AI_ASPECT_RATIO
+                              : isBicepHeartAi
+                                ? BICEP_HEART_AI_ASPECT_RATIO
+                                : isTinyDeskAi
+                                  ? TINY_DESK_AI_ASPECT_RATIO
+                                  : isSayItRightAi
+                                    ? SAY_IT_RIGHT_AI_ASPECT_RATIO
+                                    : SMALLTOWN_ASPECT_RATIO;
 
     if (isFixedTemplateProduct) {
       await bindGenjutsuUploadInputs({
@@ -1139,25 +1215,27 @@ async function POST({ request }: { request: Request }) {
                     ? GAS_STATION_DANCE_AI_ASPECT_RATIO
                     : isGlowStickAi
                       ? GLOW_STICK_AI_ASPECT_RATIO
-                      : isChipmunksDance
-                        ? CHIPMUNKS_DANCE_ASPECT_RATIO
-                        : isFlyingCarAi
-                          ? FLYING_CAR_AI_ASPECT_RATIO
-                          : isShanShenBu
-                            ? SHAN_SHEN_BU_ASPECT_RATIO
-                            : isEnzoFernandezAi
-                              ? ENZO_FERNANDEZ_AI_ASPECT_RATIO
-                              : isBurningBridgesAi
-                                ? BURNING_BRIDGES_AI_ASPECT_RATIO
-                                : isBicepHeartAi
-                                  ? BICEP_HEART_AI_ASPECT_RATIO
-                                  : isTinyDeskAi
-                                    ? TINY_DESK_AI_ASPECT_RATIO
-                                    : isSayItRightAi
-                                      ? SAY_IT_RIGHT_AI_ASPECT_RATIO
-                                      : isSmalltown
-                                        ? SMALLTOWN_ASPECT_RATIO
-                                        : CRAZY_FROG_ASPECT_RATIO
+                      : isWassupInAMinuteAi
+                        ? WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO
+                        : isChipmunksDance
+                          ? CHIPMUNKS_DANCE_ASPECT_RATIO
+                          : isFlyingCarAi
+                            ? FLYING_CAR_AI_ASPECT_RATIO
+                            : isShanShenBu
+                              ? SHAN_SHEN_BU_ASPECT_RATIO
+                              : isEnzoFernandezAi
+                                ? ENZO_FERNANDEZ_AI_ASPECT_RATIO
+                                : isBurningBridgesAi
+                                  ? BURNING_BRIDGES_AI_ASPECT_RATIO
+                                  : isBicepHeartAi
+                                    ? BICEP_HEART_AI_ASPECT_RATIO
+                                    : isTinyDeskAi
+                                      ? TINY_DESK_AI_ASPECT_RATIO
+                                      : isSayItRightAi
+                                        ? SAY_IT_RIGHT_AI_ASPECT_RATIO
+                                        : isSmalltown
+                                          ? SMALLTOWN_ASPECT_RATIO
+                                          : CRAZY_FROG_ASPECT_RATIO
           : undefined,
         videoKey: normalizedInputs[0].key,
         imageKeys: normalizedInputs.slice(1).map((item) => item.key),
@@ -1225,6 +1303,7 @@ async function POST({ request }: { request: Request }) {
       error instanceof GangnamStyleAiProviderBindingError ||
       error instanceof GasStationDanceAiProviderBindingError ||
       error instanceof GlowStickAiProviderBindingError ||
+      error instanceof WassupInAMinuteAiProviderBindingError ||
       error instanceof ChipmunksDanceProviderBindingError
     ) {
       return respErr(error.message, { status: 400 });

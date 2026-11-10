@@ -39,6 +39,12 @@ const STATIC_PAGES: { path: string; title: string; description: string }[] = [
     description: 'Three-photo glow-stick sync dance AI video generator',
   },
   {
+    path: '/wassup-in-a-minute-ai',
+    title: 'Wassup in a Minute AI Video',
+    description:
+      '1–3 photo hillside sway AI video generator (sparse left/center/right slots, fixed outdoor template)',
+  },
+  {
     path: '/chipmunks-dance',
     title: 'Chipmunks Dance',
     description:

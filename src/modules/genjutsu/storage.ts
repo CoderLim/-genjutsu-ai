@@ -980,6 +980,13 @@ export function getBicepHeartTemplateVideoKey() {
   );
 }
 
+export function getWassupInAMinuteAiTemplateVideoKey() {
+  return (
+    envConfigs.wassup_in_a_minute_ai_template_video_key?.trim() ||
+    'genjutsu/templates/wassup-in-a-minute-ai.mp4'
+  );
+}
+
 export function getBurningBridgesAiTemplateVideoKey() {
   return (
     envConfigs.burning_bridges_ai_template_video_key?.trim() ||
@@ -1147,6 +1154,14 @@ export async function ensureBicepHeartTemplateInR2() {
   });
 }
 
+export async function ensureWassupInAMinuteAiTemplateInR2() {
+  return ensureGenjutsuPublicTemplateInR2({
+    key: getWassupInAMinuteAiTemplateVideoKey(),
+    localRelative: 'public/videos/wassup-in-a-minute-ai-tpl.mp4',
+    label: 'Wassup in a Minute AI',
+  });
+}
+
 export async function ensureBurningBridgesAiTemplateInR2() {
   return ensureGenjutsuPublicTemplateInR2({
     key: getBurningBridgesAiTemplateVideoKey(),
@@ -1222,6 +1237,8 @@ export function getGenjutsuProductTemplateVideoKey(
       return getChipmunksDanceTemplateVideoKey();
     case 'bicep-heart':
       return getBicepHeartTemplateVideoKey();
+    case 'wassup-in-a-minute-ai':
+      return getWassupInAMinuteAiTemplateVideoKey();
     default: {
       const _exhaustive: never = product;
       throw new Error(
@@ -1270,6 +1287,8 @@ export async function ensureGenjutsuProductTemplateInR2(
       return ensureChipmunksDanceTemplateInR2();
     case 'bicep-heart':
       return ensureBicepHeartTemplateInR2();
+    case 'wassup-in-a-minute-ai':
+      return ensureWassupInAMinuteAiTemplateInR2();
     default: {
       const _exhaustive: never = product;
       throw new Error(
@@ -1367,6 +1386,7 @@ export async function sealGenjutsuTemplateR2Inputs(params: {
   const burningBridgesAiKey = getBurningBridgesAiTemplateVideoKey();
   const bicepHeartKey = getBicepHeartTemplateVideoKey();
   const tinyDeskAiKey = getTinyDeskAiTemplateVideoKey();
+  const wassupInAMinuteAiKey = getWassupInAMinuteAiTemplateVideoKey();
   const templateVideoKey =
     params.templateVideoKey === landscapeKey
       ? await ensureZombieHugTemplateInR2('16:9')
@@ -1398,7 +1418,10 @@ export async function sealGenjutsuTemplateR2Inputs(params: {
                                 ? await ensureBicepHeartTemplateInR2()
                                 : params.templateVideoKey === tinyDeskAiKey
                                   ? await ensureTinyDeskAiTemplateInR2()
-                                  : params.templateVideoKey;
+                                  : params.templateVideoKey ===
+                                      wassupInAMinuteAiKey
+                                    ? await ensureWassupInAMinuteAiTemplateInR2()
+                                    : params.templateVideoKey;
 
   assertSafeObjectKey(templateVideoKey);
   if (!templateVideoKey.startsWith('genjutsu/')) {

@@ -34,6 +34,7 @@ const STATIC_PATHS = [
   '/bulin-47-ai',
   '/bicep-heart-ai',
   '/glow-stick-ai',
+  '/wassup-in-a-minute-ai',
   '/chipmunks-dance',
   '/blog',
   '/burning-bridges-ai',
@@ -52,6 +53,8 @@ const LIMITED_STATIC_PATH_LOCALES: Record<string, readonly string[]> = {
   '/bicep-heart-ai': [baseLocale],
   // Glow Stick ships English editorial first.
   '/glow-stick-ai': [baseLocale],
+  // Wassup in a Minute ships English editorial first.
+  '/wassup-in-a-minute-ai': [baseLocale],
   // 58th Floor ships English editorial first.
   '/58th-floor-ai-video': [baseLocale],
   // Chipmunks Dance ships English editorial first.

@@ -66,6 +66,10 @@ const EXPLORE_LINKS = [
   },
   { label: () => m['site.smalltown.seo.more_crazy'](), href: '/crazy-frog-ai' },
   {
+    label: () => m['site.smalltown.seo.more_wassup'](),
+    href: '/wassup-in-a-minute-ai',
+  },
+  {
     label: () => m['site.smalltown.seo.more_sayitright'](),
     href: '/say-it-right-ai',
   },
