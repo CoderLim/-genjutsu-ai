@@ -95,6 +95,15 @@ const DEFAULT_OBJECTS_RESOLUTION = '480p' as const;
  */
 export const MOTION_TEMPLATES: MotionTemplate[] = [
   {
+    id: 'wassup-in-a-minute-ai',
+    titleKey: 'site.templates.wassup_in_a_minute_ai',
+    poster: WASSUP_IN_A_MINUTE_AI_TEMPLATE_POSTER_PATH,
+    sourceVideo: WASSUP_IN_A_MINUTE_AI_TEMPLATE_DISPLAY_PATH,
+    href: '/wassup-in-a-minute-ai',
+    ctaLabelKey: 'site.templates.wassup_in_a_minute_ai_cta',
+    aspect: 'landscape',
+  },
+  {
     id: 'bicep-heart',
     titleKey: 'site.templates.bicep_heart',
     poster: '/videos/bicep-heart-tpl-poster.jpg',
@@ -110,15 +119,6 @@ export const MOTION_TEMPLATES: MotionTemplate[] = [
     sourceVideo: CHIPMUNKS_DANCE_TEMPLATE_DISPLAY_PATH,
     href: '/chipmunks-dance',
     aspect: 'portrait',
-  },
-  {
-    id: 'wassup-in-a-minute-ai',
-    titleKey: 'site.templates.wassup_in_a_minute_ai',
-    poster: WASSUP_IN_A_MINUTE_AI_TEMPLATE_POSTER_PATH,
-    sourceVideo: WASSUP_IN_A_MINUTE_AI_TEMPLATE_DISPLAY_PATH,
-    href: '/wassup-in-a-minute-ai',
-    ctaLabelKey: 'site.templates.wassup_in_a_minute_ai_cta',
-    aspect: 'landscape',
   },
   {
     id: 'glow-stick',

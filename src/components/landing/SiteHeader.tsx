@@ -32,6 +32,11 @@ const AI_PHOTO_EDITOR_HREF = 'https://getaiphotoeditor.com/';
 
 const TRENDING_LINKS = [
   {
+    label: 'Wassup in a Minute AI',
+    href: '/wassup-in-a-minute-ai',
+    poster: '/videos/wassup-in-a-minute-ai-tpl-poster.jpg',
+  },
+  {
     label: 'Tiny Desk AI',
     href: '/tiny-desk-ai',
     poster: '/videos/tiny-desk-ai-tpl-poster.jpg',
@@ -100,11 +105,6 @@ const TRENDING_LINKS = [
     label: 'Bicep Heart Trend',
     href: '/bicep-heart-ai',
     poster: '/videos/bicep-heart-tpl-poster.jpg',
-  },
-  {
-    label: 'Wassup in a Minute AI',
-    href: '/wassup-in-a-minute-ai',
-    poster: '/videos/wassup-in-a-minute-ai-tpl-poster.jpg',
   },
   {
     label: 'Glow Stick AI',
