@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { filterPublicConfigs, getAllConfigs } from '@/modules/config/service';
-import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
+import { resolveGenjutsuPublicPricingConfig } from '@/modules/genjutsu/workflow';
 import { respData } from '@/lib/resp';
 
 const noStore = {
@@ -59,16 +59,9 @@ async function GET({ request }: { request: Request }) {
     configs.email_verification_enabled === 'true' && emailConfigured
       ? 'true'
       : 'false';
-  // Provider and model must come from the same resolver as /api/genjutsu/attempt.
-  // Both Genjutsu Standard and Light use provider=higgsfield; exposing only the
-  // provider would make the homepage quote Standard even when Light is selected.
-  // These identifiers are public; never expose API keys or model credentials.
-  const motionTarget = resolveGenjutsuProviderTarget('motion-transfer');
-  const objectSwapTarget = resolveGenjutsuProviderTarget('objects-swap');
-  result.genjutsu_motion_provider = motionTarget.provider;
-  result.genjutsu_motion_model = motionTarget.model;
-  result.genjutsu_object_swap_provider = objectSwapTarget.provider;
-  result.genjutsu_object_swap_model = objectSwapTarget.model;
+  // Safe-to-expose identifiers from the same server resolver used by attempt.
+  // Exposing only provider=higgsfield would mix up Standard and Light quotes.
+  Object.assign(result, resolveGenjutsuPublicPricingConfig());
   return respData(result, noStore);
 }
 
