@@ -142,11 +142,11 @@ test('bicep-heart is pinned to Genjutsu Light rather than the homepage', () => {
   });
 });
 
-test('wassup-in-a-minute-ai is pinned to Genjutsu Light rather than the homepage', () => {
+test('wassup-in-a-minute-ai is pinned to Genjutsu Standard rather than the homepage', () => {
   const target = resolveProductProviderTarget(WASSUP_IN_A_MINUTE_AI_PRODUCT, 'objects-swap');
   assert.deepEqual(target, {
     provider: 'higgsfield',
-    model: HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'],
+    model: HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap'],
   });
 });
 
