@@ -33,16 +33,18 @@ export function getTinyDeskAiSeoPriceAmounts(): TinyDeskAiSeoPriceAmounts {
   const starter = GENJUTSU_CREDIT_PACKS[0]!;
   const creator = getDisplayCreditPack();
   const usdPerCredit = getDisplayUsdPerCredit();
-  const provider = resolveTinyDeskAiProviderTarget().provider;
+  const { provider, model } = resolveTinyDeskAiProviderTarget();
 
   const credits480 = estimateGenjutsuCreditsForProvider({
     provider,
+    model,
     durationSeconds: TINY_DESK_AI_TEMPLATE_DURATION_SECONDS,
     resolution: '480p',
     aspectRatio: TINY_DESK_AI_ASPECT_RATIO,
   });
   const credits720 = estimateGenjutsuCreditsForProvider({
     provider,
+    model,
     durationSeconds: TINY_DESK_AI_TEMPLATE_DURATION_SECONDS,
     resolution: '720p',
     aspectRatio: TINY_DESK_AI_ASPECT_RATIO,
