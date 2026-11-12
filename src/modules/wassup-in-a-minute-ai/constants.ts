@@ -30,8 +30,8 @@ export const WASSUP_IN_A_MINUTE_AI_PREVIEW_CLIP_PATH =
 export const WASSUP_IN_A_MINUTE_AI_TEMPLATE_DURATION_SECONDS = 15.022993;
 
 /**
- * Stored on the task for product lock / admin. Higgs Light object-swap does
- * not take Seedance aspectRatio — generate may leave aspect undefined.
+ * Stored on the task for product lock / admin. Higgsfield Genjutsu Standard
+ * does not take Seedance aspectRatio — generate may leave aspect undefined.
  */
 export const WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO = '16:9' as const;
 
@@ -156,7 +156,7 @@ export function buildWassupInAMinuteAiPrompt(
   const prompt = lines.join('\n');
   if (prompt.length > 2000) {
     throw new Error(
-      'Wassup in a Minute AI prompt exceeds Genjutsu Light 2000-char cap'
+      'Wassup in a Minute AI prompt exceeds the 2000-character safety limit'
     );
   }
   return prompt;
