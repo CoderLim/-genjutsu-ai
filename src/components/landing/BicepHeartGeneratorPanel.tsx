@@ -407,8 +407,10 @@ function PhotoSlot({
 
 export function BicepHeartAiGeneratorPanel({
   creditProvider,
+  creditModel,
 }: {
   creditProvider: GenjutsuProvider;
+  creditModel: string;
 }) {
   const { data: session, isPending: sessionPending } = useSession();
   const creditsQuery = useUserCredits(Boolean(session?.user));
@@ -444,20 +446,22 @@ export function BicepHeartAiGeneratorPanel({
   const estimatedCredits = useMemo(() => {
     return estimateGenjutsuCreditsForProvider({
       provider: creditProvider,
+      model: creditModel,
       durationSeconds: BICEP_HEART_AI_TEMPLATE_DURATION_SECONDS,
       resolution,
       aspectRatio: BICEP_HEART_AI_ASPECT_RATIO,
     });
-  }, [creditProvider, resolution]);
+  }, [creditProvider, creditModel, resolution]);
 
   const previewEstimatedCredits = useMemo(() => {
     return estimateGenjutsuCreditsForProvider({
       provider: creditProvider,
+      model: creditModel,
       durationSeconds: PREVIEW_DURATION_SECONDS,
       resolution: '480p',
       aspectRatio: BICEP_HEART_AI_ASPECT_RATIO,
     });
-  }, [creditProvider]);
+  }, [creditProvider, creditModel]);
 
   const busy =
     phase === 'uploading' ||
