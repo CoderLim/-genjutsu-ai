@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
-
+import { HIGGSFIELD_GENJUTSU_MODELS } from '@/modules/genjutsu/model-config';
 import { GLOW_STICK_AI_MODE } from './constants';
 import {
   assertGlowStickAiProviderBinding,
@@ -10,24 +9,29 @@ import {
   resolveGlowStickAiProviderTarget,
 } from './provider';
 
-test('glow-stick resolves to homepage objects-swap target', () => {
-  const target = resolveGlowStickAiProviderTarget();
-  const homepage = resolveGenjutsuProviderTarget(GLOW_STICK_AI_MODE);
-  assert.equal(target.provider, homepage.provider);
-  assert.equal(target.model, homepage.model);
+test('glow-stick-ai pins Genjutsu Light independently of the homepage', () => {
+  assert.deepEqual(resolveGlowStickAiProviderTarget(), {
+    provider: 'higgsfield',
+    model: HIGGSFIELD_GENJUTSU_MODELS.light[GLOW_STICK_AI_MODE],
+  });
 });
 
-test('glow-stick provider binding accepts homepage target only', () => {
-  const expected = resolveGlowStickAiProviderTarget();
+test('glow-stick-ai accepts persisted Light and historical Standard tasks', () => {
   assert.doesNotThrow(() =>
-    assertGlowStickAiProviderBinding(expected.provider, expected.model)
+    assertGlowStickAiProviderBinding('higgsfield', HIGGSFIELD_GENJUTSU_MODELS.light[GLOW_STICK_AI_MODE])
+  );
+  assert.doesNotThrow(() =>
+    assertGlowStickAiProviderBinding('higgsfield', HIGGSFIELD_GENJUTSU_MODELS.standard[GLOW_STICK_AI_MODE])
+  );
+});
+
+test('glow-stick-ai rejects unrelated providers and unknown models', () => {
+  assert.throws(
+    () => assertGlowStickAiProviderBinding('seedance-wavespeed', 'bytedance/seedance-2.5/video-edit'),
+    GlowStickAiProviderBindingError
   );
   assert.throws(
-    () =>
-      assertGlowStickAiProviderBinding(
-        'seedance-wavespeed',
-        'bytedance/seedance-2.5/video-edit'
-      ),
+    () => assertGlowStickAiProviderBinding('higgsfield', 'not-an-allowed-model'),
     GlowStickAiProviderBindingError
   );
 });
