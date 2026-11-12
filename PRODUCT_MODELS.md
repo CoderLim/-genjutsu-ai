@@ -39,7 +39,9 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 
 ## A. Genjutsu 链（`/api/genjutsu/*`）
 
-| 路径                                  | product id             | mode            | 解析                              | 生产 provider        | 生产 model                                       |
+下表模型为上述历史 env 快照结合**本分支内页 pin 配置**推导的目标行为；不是 2026-11-12 线上实测快照。
+
+| 路径                                  | product id             | mode            | 解析                              | 示例 provider        | 示例 model                                       |
 | ------------------------------------- | ---------------------- | --------------- | --------------------------------- | -------------------- | ------------------------------------------------ |
 | `/`（首页）                           | —                      | motion-transfer | mode env                          | `higgsfield`         | `higgsfield/genjutsu-light/motion-transfer/v1.0` |
 | `/`（首页）                           | —                      | objects-swap    | mode env                          | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
@@ -86,5 +88,5 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 
 1. 修改 `wrangler.jsonc` / `wrangler.example.jsonc` 的 Genjutsu env 或 `PRODUCT_GENJUTSU_MODEL_PROFILES` 后，同步更新路由表；不要将历史快照误认为现网配置。
 2. 新增 Genjutsu 趋势页时：加入 `isGenjutsuProductId` allowlist，并决定是否需要内页模型钉选。默认不钉选，沿用旧 env 路由。
-3. 历史任务按落库的 `provider` / `model` 处理，不受后续 env 影响；五个钉选页的校验仅放行 Higgsfield Standard / Light 已知组合，不适用于 Seedance 页。
+3. 历史任务按落库的 `provider` / `model` 处理，不受后续 env 影响；五个钉选页的校验只接受 Higgsfield Genjutsu 的已知或当前配置模型组合，不适用于 Seedance 页。
 4. 合入前按 `docs/genjutsu-product-model-routing-2026-11-12.md` 验证双模型同部署、首页两种 mode 报价、历史任务、预览以及真实计费。
