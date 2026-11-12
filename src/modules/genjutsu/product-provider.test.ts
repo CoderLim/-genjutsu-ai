@@ -222,8 +222,10 @@ test('isGenjutsuProductId allowlist', () => {
 
 test('Standard and Light can coexist with one Higgsfield provider', () => {
   const previousProvider = envConfigs.genjutsu_object_swap_provider;
+  const previousProductProvider = envConfigs.genjutsu_product_provider;
   const previousModel = envConfigs.higgsfield_genjutsu_object_swap_model;
   try {
+    envConfigs.genjutsu_product_provider = '';
     envConfigs.genjutsu_object_swap_provider = 'higgsfield';
     envConfigs.higgsfield_genjutsu_object_swap_model =
       HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap'];
@@ -242,6 +244,7 @@ test('Standard and Light can coexist with one Higgsfield provider', () => {
     assert.equal(unpinned.model, HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap']);
   } finally {
     envConfigs.genjutsu_object_swap_provider = previousProvider;
+    envConfigs.genjutsu_product_provider = previousProductProvider;
     envConfigs.higgsfield_genjutsu_object_swap_model = previousModel;
   }
 });
