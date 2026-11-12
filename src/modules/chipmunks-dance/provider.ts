@@ -1,7 +1,10 @@
 import type { GenjutsuProviderTarget } from '@/modules/genjutsu/types';
-import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
+import {
+  isPersistedProductProviderTarget,
+  resolveProductProviderTarget,
+} from '@/modules/genjutsu/workflow';
 
-import { CHIPMUNKS_DANCE_MODE } from './constants';
+import { CHIPMUNKS_DANCE_MODE, CHIPMUNKS_DANCE_PRODUCT_ID } from './constants';
 
 export class ChipmunksDanceProviderBindingError extends Error {
   constructor(message: string) {
@@ -10,12 +13,9 @@ export class ChipmunksDanceProviderBindingError extends Error {
   }
 }
 
-/**
- * Homepage Genjutsu Light parity: ignore `GENJUTSU_PRODUCT_PROVIDER` and follow
- * `GENJUTSU_OBJECT_SWAP_PROVIDER` (production: higgsfield / genjutsu-light).
- */
+/** Resolve this product's server-owned model pin (independent of homepage env). */
 export function resolveChipmunksDanceProviderTarget(): GenjutsuProviderTarget {
-  return resolveGenjutsuProviderTarget(CHIPMUNKS_DANCE_MODE);
+  return resolveProductProviderTarget(CHIPMUNKS_DANCE_PRODUCT_ID, CHIPMUNKS_DANCE_MODE);
 }
 
 /**
@@ -36,10 +36,9 @@ export function assertChipmunksDanceProviderBinding(
       'Chipmunks Dance task is missing a provider/model binding'
     );
   }
-  const expected = resolveGenjutsuProviderTarget(CHIPMUNKS_DANCE_MODE);
-  if (provider !== expected.provider || model !== expected.model) {
+  if (!isPersistedProductProviderTarget(provider, model, CHIPMUNKS_DANCE_MODE)) {
     throw new ChipmunksDanceProviderBindingError(
-      `Chipmunks Dance requires homepage objects-swap provider/model (${expected.provider} / ${expected.model})`
+      `Chipmunks Dance requires homepage objects-swap provider/model (${String(provider)} / ${String(model)})`
     );
   }
 }
