@@ -38,10 +38,10 @@ export const PRODUCT_GENJUTSU_MODEL_PROFILES: Partial<
 export function getProductGenjutsuModelProfile(
   product: string | null | undefined
 ): HiggsfieldGenjutsuProfile | undefined {
-  if (!product) return undefined;
-  return PRODUCT_GENJUTSU_MODEL_PROFILES[
-    product as GenjutsuProductId
-  ];
+  if (!product || !Object.prototype.hasOwnProperty.call(PRODUCT_GENJUTSU_MODEL_PROFILES, product)) {
+    return undefined;
+  }
+  return PRODUCT_GENJUTSU_MODEL_PROFILES[product as GenjutsuProductId];
 }
 
 export function isHiggsfieldGenjutsuLightModel(model: string | null | undefined) {
