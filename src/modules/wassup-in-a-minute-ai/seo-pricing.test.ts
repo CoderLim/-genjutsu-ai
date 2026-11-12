@@ -8,9 +8,7 @@ import {
 } from '@/modules/genjutsu/pricing';
 import { HIGGSFIELD_GENJUTSU_MODELS } from '@/modules/genjutsu/model-config';
 
-import {
-  WASSUP_IN_A_MINUTE_AI_TEMPLATE_DURATION_SECONDS,
-} from './constants';
+import { WASSUP_IN_A_MINUTE_AI_TEMPLATE_DURATION_SECONDS } from './constants';
 import { resolveWassupInAMinuteAiProviderTarget } from './provider';
 
 import { getWassupInAMinuteAiSeoPriceAmounts } from './seo-pricing';
@@ -41,7 +39,10 @@ test('Wassup uses Standard cost for full-length 720p SEO pricing', () => {
   });
   const amounts = getWassupInAMinuteAiSeoPriceAmounts();
   assert.equal(amounts.credits720, credits);
-  assert.equal(amounts.usd720, `$${Math.round(credits * getDisplayUsdPerCredit())}`);
+  assert.equal(
+    amounts.usd720,
+    `${Math.round(credits * getDisplayUsdPerCredit())}`
+  );
   assert.ok(
     credits >
       estimateGenjutsuCreditsForProvider({
