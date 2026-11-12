@@ -1,7 +1,10 @@
 import type { GenjutsuProviderTarget } from '@/modules/genjutsu/types';
-import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
+import {
+  isPersistedProductProviderTarget,
+  resolveProductProviderTarget,
+} from '@/modules/genjutsu/workflow';
 
-import { BICEP_HEART_AI_MODE } from './constants';
+import { BICEP_HEART_AI_MODE, BICEP_HEART_AI_PRODUCT_ID } from './constants';
 
 export class BicepHeartAiProviderBindingError extends Error {
   constructor(message: string) {
@@ -10,12 +13,9 @@ export class BicepHeartAiProviderBindingError extends Error {
   }
 }
 
-/**
- * Homepage Genjutsu Light parity: ignore `GENJUTSU_PRODUCT_PROVIDER` and follow
- * `GENJUTSU_OBJECT_SWAP_PROVIDER` (production: higgsfield / genjutsu-light).
- */
+/** Resolve this product's server-owned model pin (independent of homepage env). */
 export function resolveBicepHeartAiProviderTarget(): GenjutsuProviderTarget {
-  return resolveGenjutsuProviderTarget(BICEP_HEART_AI_MODE);
+  return resolveProductProviderTarget(BICEP_HEART_AI_PRODUCT_ID, BICEP_HEART_AI_MODE);
 }
 
 /**
@@ -36,10 +36,9 @@ export function assertBicepHeartAiProviderBinding(
       'Bicep Heart AI task is missing a provider/model binding'
     );
   }
-  const expected = resolveGenjutsuProviderTarget(BICEP_HEART_AI_MODE);
-  if (provider !== expected.provider || model !== expected.model) {
+  if (!isPersistedProductProviderTarget(provider, model, BICEP_HEART_AI_MODE)) {
     throw new BicepHeartAiProviderBindingError(
-      `Bicep Heart AI requires homepage objects-swap provider/model (${expected.provider} / ${expected.model})`
+      `Bicep Heart AI requires homepage objects-swap provider/model (${String(provider)} / ${String(model)})`
     );
   }
 }
