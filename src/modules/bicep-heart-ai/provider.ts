@@ -20,7 +20,7 @@ export function resolveBicepHeartAiProviderTarget(): GenjutsuProviderTarget {
 
 /**
  * Persisted attempts keep the provider/model they were created with.
- * Bicep Heart must stay on the homepage objects-swap target (Higgs Light).
+ * Accept previous Standard jobs as well as the current product-scoped Light pin.
  */
 export function assertBicepHeartAiProviderBinding(
   provider: unknown,
@@ -38,7 +38,7 @@ export function assertBicepHeartAiProviderBinding(
   }
   if (!isPersistedProductProviderTarget(provider, model, BICEP_HEART_AI_MODE)) {
     throw new BicepHeartAiProviderBindingError(
-      `Bicep Heart AI requires homepage objects-swap provider/model (${String(provider)} / ${String(model)})`
+      `Bicep Heart AI does not support persisted provider/model (${String(provider)} / ${String(model)})`
     );
   }
 }
