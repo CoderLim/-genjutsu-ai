@@ -166,6 +166,22 @@ export function resolveGenjutsuProviderTarget(
 }
 
 /**
+ * The homepage price UI must receive the exact target for each mode.
+ * Higgsfield Standard and Light have the same provider but different rates.
+ * Never include provider credentials in this public configuration.
+ */
+export function resolveGenjutsuPublicPricingConfig() {
+  const motion = resolveGenjutsuProviderTarget('motion-transfer');
+  const objectSwap = resolveGenjutsuProviderTarget('objects-swap');
+  return {
+    genjutsu_motion_provider: motion.provider,
+    genjutsu_motion_model: motion.model,
+    genjutsu_object_swap_provider: objectSwap.provider,
+    genjutsu_object_swap_model: objectSwap.model,
+  };
+}
+
+/**
  * Explicit product model pins win. Unpinned products keep their existing mode
  * env routers and optional GENJUTSU_PRODUCT_PROVIDER override.
  */
@@ -197,8 +213,9 @@ export function resolveProductProviderTarget(
 /**
  * Persisted product tasks were bound by the server when the attempt was created.
  * Allow known Standard/Light targets across subsequent env/profile changes.
- * This check is intentionally limited to Higgsfield Genjutsu models: the five
- * pinned products must not silently switch to unrelated Seedance providers.
+ * This check is intentionally limited to the five Higgsfield Genjutsu product
+ * pages. Do not reuse it in Seedance-family product assert functions: those
+ * pages have different provider/model contracts.
  */
 export function isPersistedProductProviderTarget(
   provider: unknown,
