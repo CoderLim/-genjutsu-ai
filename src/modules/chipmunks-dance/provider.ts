@@ -20,7 +20,7 @@ export function resolveChipmunksDanceProviderTarget(): GenjutsuProviderTarget {
 
 /**
  * Persisted attempts keep the provider/model they were created with.
- * Chipmunks Dance must stay on the homepage objects-swap target (Higgs Light).
+ * Accept previous Standard jobs as well as the current product-scoped Light pin.
  */
 export function assertChipmunksDanceProviderBinding(
   provider: unknown,
@@ -38,7 +38,7 @@ export function assertChipmunksDanceProviderBinding(
   }
   if (!isPersistedProductProviderTarget(provider, model, CHIPMUNKS_DANCE_MODE)) {
     throw new ChipmunksDanceProviderBindingError(
-      `Chipmunks Dance requires homepage objects-swap provider/model (${String(provider)} / ${String(model)})`
+      `Chipmunks Dance does not support persisted provider/model (${String(provider)} / ${String(model)})`
     );
   }
 }
