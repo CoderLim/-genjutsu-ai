@@ -1,7 +1,10 @@
 import type { GenjutsuProviderTarget } from '@/modules/genjutsu/types';
-import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
+import {
+  isPersistedProductProviderTarget,
+  resolveProductProviderTarget,
+} from '@/modules/genjutsu/workflow';
 
-import { TINY_DESK_AI_MODE } from './constants';
+import { TINY_DESK_AI_MODE, TINY_DESK_AI_PRODUCT_ID } from './constants';
 
 export class TinyDeskAiProviderBindingError extends Error {
   constructor(message: string) {
@@ -10,12 +13,9 @@ export class TinyDeskAiProviderBindingError extends Error {
   }
 }
 
-/**
- * Homepage Genjutsu Light parity: ignore `GENJUTSU_PRODUCT_PROVIDER` and follow
- * `GENJUTSU_OBJECT_SWAP_PROVIDER` (production: higgsfield / genjutsu-light).
- */
+/** Resolve this product's server-owned model pin (independent of homepage env). */
 export function resolveTinyDeskAiProviderTarget(): GenjutsuProviderTarget {
-  return resolveGenjutsuProviderTarget(TINY_DESK_AI_MODE);
+  return resolveProductProviderTarget(TINY_DESK_AI_PRODUCT_ID, TINY_DESK_AI_MODE);
 }
 
 /**
@@ -36,10 +36,9 @@ export function assertTinyDeskAiProviderBinding(
       'Tiny Desk AI task is missing a provider/model binding'
     );
   }
-  const expected = resolveGenjutsuProviderTarget(TINY_DESK_AI_MODE);
-  if (provider !== expected.provider || model !== expected.model) {
+  if (!isPersistedProductProviderTarget(provider, model, TINY_DESK_AI_MODE)) {
     throw new TinyDeskAiProviderBindingError(
-      `Tiny Desk AI requires homepage objects-swap provider/model (${expected.provider} / ${expected.model})`
+      `Tiny Desk AI requires homepage objects-swap provider/model (${String(provider)} / ${String(model)})`
     );
   }
 }
