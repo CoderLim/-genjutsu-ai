@@ -15,6 +15,7 @@ import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { SiteHeader } from '@/components/landing/SiteHeader';
+import { resolveWassupInAMinuteAiProviderTarget } from '@/modules/wassup-in-a-minute-ai/provider';
 import { WassupInAMinuteGeneratorPanel } from '@/components/landing/WassupInAMinuteGeneratorPanel';
 import { SeoJsonLd } from '@/components/seo-json-ld';
 
@@ -209,6 +210,7 @@ function softwareApplicationJsonLd(canonical: string) {
 }
 
 function WassupInAMinuteAiPage() {
+  const { creditProvider, creditModel } = Route.useLoaderData();
   const price = getWassupInAMinuteAiSeoPriceAmounts();
   const faqs = faqItems();
   const { canonical } = localeLinks(PAGE_PATH, getLocale(), ['en']);
@@ -248,7 +250,7 @@ function WassupInAMinuteAiPage() {
           </p>
 
           <div id="generator" className="mt-8 scroll-mt-24 text-left sm:mt-10">
-            <WassupInAMinuteGeneratorPanel />
+            <WassupInAMinuteGeneratorPanel creditProvider={creditProvider} creditModel={creditModel} />
           </div>
         </section>
       </div>
@@ -546,7 +548,10 @@ export const Route = createFileRoute('/wassup-in-a-minute-ai')({
   },
   loader: () => {
     const locale = getLocale();
+    const target = resolveWassupInAMinuteAiProviderTarget();
     return {
+      creditProvider: target.provider,
+      creditModel: target.model,
       locale,
       title: m['site.wassup.page_title']({}, { locale }),
       description: m['site.wassup.page_description']({}, { locale }),
