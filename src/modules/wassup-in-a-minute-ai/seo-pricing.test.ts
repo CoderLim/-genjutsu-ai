@@ -41,7 +41,7 @@ test('Wassup uses Standard cost for full-length 720p SEO pricing', () => {
   assert.equal(amounts.credits720, credits);
   assert.equal(
     amounts.usd720,
-    `${Math.round(credits * getDisplayUsdPerCredit())}`
+    `$${Math.round(credits * getDisplayUsdPerCredit())}`
   );
   assert.ok(
     credits >
