@@ -13,7 +13,7 @@
 | 其他 allowlisted 内页 | 未命中钉选时走 `GENJUTSU_PRODUCT_PROVIDER`，未设时跟随首页 mode env |
 | 独立产品 | 由独立模块配置，不跟 Genjutsu env |
 
-**优先级：内页显式模型配置 > allowlisted 产品 provider env > 全局 mode env。** 内页配置见 `src/modules/genjutsu/model-config.ts`；`resolveProductProviderTarget(product, mode)` 统一路由。五个固定 Light 内页不会随着首页 env 切换 Standard / Light，也不会被 `GENJUTSU_PRODUCT_PROVIDER` 覆盖。
+**优先级：内页显式模型配置 > allowlisted 产品 provider env > 全局 mode env。** 内页配置见 `src/modules/genjutsu/model-config.ts`；`resolveProductProviderTarget(product, mode)` 统一路由。五个显式钉选的内页不会随着首页 env 切换 Standard / Light，也不会被 `GENJUTSU_PRODUCT_PROVIDER` 覆盖。其中四个使用 Light，`wassup-in-a-minute-ai` 使用 Standard。
 
 配置来源：
 
@@ -35,7 +35,7 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 - motion-transfer → `bytedance/seedance-2.5/motion-control`
 - objects-swap → `bytedance/seedance-2.5/video-edit`
 
-多数带 Seedance assert 的产品页在 generate 时要求 Seedance family；不能只通过切首页 env 就把这些页面改为 Higgsfield Genjutsu。五个通过代码配置单独钉选 Light 的内页为 `glow-stick`、`tiny-desk-ai`、`chipmunks-dance`、`bicep-heart`、`wassup-in-a-minute-ai`。
+多数带 Seedance assert 的产品页在 generate 时要求 Seedance family；不能只通过切首页 env 就把这些页面改为 Higgsfield Genjutsu。五个通过代码单独钉选模型的内页为：Light（`glow-stick`、`tiny-desk-ai`、`chipmunks-dance`、`bicep-heart`）以及 Standard（`wassup-in-a-minute-ai`）。
 
 ## A. Genjutsu 链（`/api/genjutsu/*`）
 
@@ -61,7 +61,7 @@ WaveSpeed 默认 model（`GENJUTSU_PRODUCT_PROVIDER=seedance-wavespeed` 时）�
 | `/tiny-desk-ai`                       | `tiny-desk-ai`         | objects-swap    | 内页 model profile（Light） | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
 | `/bicep-heart-ai`                     | `bicep-heart`          | objects-swap    | 内页 model profile（Light） | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
 | `/shan-shen-bu`（`/shanshenbu` 别名） | `shan-shen-bu`         | objects-swap    | product override                  | `seedance-wavespeed` | `bytedance/seedance-2.5/video-edit`              |
-| `/wassup-in-a-minute-ai`             | `wassup-in-a-minute-ai` | objects-swap    | 内页 model profile（Light）       | `higgsfield`         | `higgsfield/genjutsu-light/object-swap/v1.0`     |
+| `/wassup-in-a-minute-ai`             | `wassup-in-a-minute-ai` | objects-swap    | 内页 model profile（Standard）    | `higgsfield`         | `higgsfield/genjutsu/object-swap/v1.0`           |
 
 计费：任何 Genjutsu 任务都在 attempt 时确定并持久化 `provider + model`。后续 estimate / submit / 轮询和积分结算使用该任务记录，不能因后续修改 env 或内页配置而改用新模型。
 
