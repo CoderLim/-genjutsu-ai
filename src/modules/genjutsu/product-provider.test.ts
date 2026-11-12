@@ -19,6 +19,7 @@ import {
   GLOW_STICK_PRODUCT,
   isGenjutsuProductId,
   resolveGenjutsuProviderTarget,
+  resolveGenjutsuPublicPricingConfig,
   resolveProductProviderTarget,
   SAY_IT_RIGHT_AI_PRODUCT,
   SHAN_SHEN_BU_PRODUCT,
@@ -254,4 +255,56 @@ test('unknown inherited property names never activate product model overrides', 
     resolveProductProviderTarget('constructor', 'objects-swap'),
     resolveGenjutsuProviderTarget('objects-swap')
   );
+});
+
+test('public homepage config reports exact model for each mode even with one Higgsfield provider', () => {
+  const original = {
+    motionProvider: envConfigs.genjutsu_motion_provider,
+    motionModel: envConfigs.higgsfield_genjutsu_motion_model,
+    swapProvider: envConfigs.genjutsu_object_swap_provider,
+    swapModel: envConfigs.higgsfield_genjutsu_object_swap_model,
+  };
+  try {
+    envConfigs.genjutsu_motion_provider = 'higgsfield';
+    envConfigs.genjutsu_object_swap_provider = 'higgsfield';
+    envConfigs.higgsfield_genjutsu_motion_model =
+      HIGGSFIELD_GENJUTSU_MODELS.standard['motion-transfer'];
+    envConfigs.higgsfield_genjutsu_object_swap_model =
+      HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'];
+
+    assert.deepEqual(resolveGenjutsuPublicPricingConfig(), {
+      genjutsu_motion_provider: 'higgsfield',
+      genjutsu_motion_model:
+        HIGGSFIELD_GENJUTSU_MODELS.standard['motion-transfer'],
+      genjutsu_object_swap_provider: 'higgsfield',
+      genjutsu_object_swap_model:
+        HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'],
+    });
+  } finally {
+    envConfigs.genjutsu_motion_provider = original.motionProvider;
+    envConfigs.higgsfield_genjutsu_motion_model = original.motionModel;
+    envConfigs.genjutsu_object_swap_provider = original.swapProvider;
+    envConfigs.higgsfield_genjutsu_object_swap_model = original.swapModel;
+  }
+});
+
+test('public homepage config tracks non-Higgsfield model routing independently', () => {
+  const original = {
+    motionProvider: envConfigs.genjutsu_motion_provider,
+    swapProvider: envConfigs.genjutsu_object_swap_provider,
+  };
+  try {
+    envConfigs.genjutsu_motion_provider = 'seedance-wavespeed';
+    envConfigs.genjutsu_object_swap_provider = 'higgsfield';
+    const fields = resolveGenjutsuPublicPricingConfig();
+    const motion = resolveGenjutsuProviderTarget('motion-transfer');
+    const swap = resolveGenjutsuProviderTarget('objects-swap');
+    assert.equal(fields.genjutsu_motion_provider, motion.provider);
+    assert.equal(fields.genjutsu_motion_model, motion.model);
+    assert.equal(fields.genjutsu_object_swap_provider, swap.provider);
+    assert.equal(fields.genjutsu_object_swap_model, swap.model);
+  } finally {
+    envConfigs.genjutsu_motion_provider = original.motionProvider;
+    envConfigs.genjutsu_object_swap_provider = original.swapProvider;
+  }
 });
