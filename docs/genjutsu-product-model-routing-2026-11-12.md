@@ -35,6 +35,7 @@ Use the exact model for both live `/estimate/<model>` calls and fallback estimat
 - Standard: current list-rate fallback and 30-second source cap.
 - Light: API list-rate fallback $0.05 / $0.10 / $0.20 per billed second at 480p / 720p / 1080p; input + output seconds, with source capped at 15 seconds.
 - Frontend and SEO estimates now pass the actual selected product model for the five pinned pages.
+- Homepage `/api/config/public` returns the resolved `provider` **and** `model` for both `motion-transfer` and `objects-swap`; `GeneratorPanel` uses both for full/preview quotes. If either is missing, no speculative quote is shown.
 - Live provider estimate takes precedence. The Light fallback assumes the generated duration matches the trimmed source and rounds seconds upward.
 
 Source for Light pricing: https://open.higgsfield.ai/models/higgsfield/genjutsu-light/object-swap/v1.0/playground (checked 2026-11-12).
@@ -45,5 +46,6 @@ Source for Light pricing: https://open.higgsfield.ai/models/higgsfield/genjutsu-
 - Create jobs for a Light-pinned product and an unpinned Standard product concurrently and verify the stored `provider/model` pairs.
 - Start a Standard task, change that product's pin to Light, then submit the saved Standard task and confirm completion.
 - Check the server-reserved credits and client/SEO preview for both full and 4-second previews.
+- Set homepage motion and objects-swap to different Standard/Light models under the same `higgsfield` provider. Verify `/api/config/public` returns two different `model` fields, and that switching modes changes the browser quote. Check the expected Light 15s@720p list estimate ($3 provider cost) versus Standard ($10.215 provider cost).
 - Exercise a 15-second (and >15-second source) Light request for billing and trimming.
 - Verify no live deployment until production API behavior and costs are confirmed.
