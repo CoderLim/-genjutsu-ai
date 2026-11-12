@@ -177,7 +177,10 @@ export function resolveProductProviderTarget(
   // The homepage and unlisted products retain their existing env behavior.
   const modelProfile = getProductGenjutsuModelProfile(product);
   if (modelProfile) {
-    return { provider: 'higgsfield', model: HIGGSFIELD_GENJUTSU_MODELS[modelProfile][mode] };
+    return {
+      provider: 'higgsfield',
+      model: HIGGSFIELD_GENJUTSU_MODELS[modelProfile][mode],
+    };
   }
 
   const productOverride = envConfigs.genjutsu_product_provider?.trim();
