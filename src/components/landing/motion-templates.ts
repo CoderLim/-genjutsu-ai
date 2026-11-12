@@ -100,7 +100,6 @@ export const MOTION_TEMPLATES: MotionTemplate[] = [
     poster: WASSUP_IN_A_MINUTE_AI_TEMPLATE_POSTER_PATH,
     sourceVideo: WASSUP_IN_A_MINUTE_AI_TEMPLATE_DISPLAY_PATH,
     href: '/wassup-in-a-minute-ai',
-    ctaLabelKey: 'site.templates.wassup_in_a_minute_ai_cta',
     aspect: 'landscape',
   },
   {
