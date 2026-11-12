@@ -11,6 +11,7 @@ import {
 import { localeLinks, socialMeta } from '@/lib/seo';
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
+import { resolveGlowStickAiProviderTarget } from '@/modules/glow-stick-ai/provider';
 import { GlowStickAiGeneratorPanel } from '@/components/landing/GlowStickAiGeneratorPanel';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { SiteHeader } from '@/components/landing/SiteHeader';
@@ -117,6 +118,7 @@ function articleJsonLd() {
 }
 
 function GlowStickAiPage() {
+  const { creditProvider, creditModel } = Route.useLoaderData();
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
       <SeoJsonLd value={articleJsonLd()} />
@@ -142,7 +144,7 @@ function GlowStickAiPage() {
           </p>
 
           <div id="generator" className="mt-8 scroll-mt-24 text-left sm:mt-10">
-            <GlowStickAiGeneratorPanel />
+            <GlowStickAiGeneratorPanel creditProvider={creditProvider} creditModel={creditModel} />
           </div>
         </section>
       </div>
@@ -310,7 +312,8 @@ export const Route = createFileRoute('/glow-stick-ai')({
   },
   loader: () => {
     const locale = getLocale();
-    return { locale };
+    const target = resolveGlowStickAiProviderTarget();
+    return { locale, creditProvider: target.provider, creditModel: target.model };
   },
   head: ({ loaderData }) => {
     const locale = loaderData?.locale ?? 'en';
