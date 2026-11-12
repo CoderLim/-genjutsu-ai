@@ -1611,9 +1611,8 @@ export function GeneratorPanel({
       : publicConfig?.genjutsu_object_swap_model;
   // Wait for both fields rather than incorrectly quoting the Standard rate
   // when the server has selected Higgsfield Genjutsu Light.
-  const pricingModel = typeof rawModel === 'string' && rawModel.trim()
-    ? rawModel
-    : null;
+  const pricingModel =
+    typeof rawModel === 'string' && rawModel.trim() ? rawModel : null;
   const pricingProvider =
     rawProvider === 'higgsfield' ||
     rawProvider === 'seedance' ||
