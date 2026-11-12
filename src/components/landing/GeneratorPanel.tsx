@@ -1605,6 +1605,15 @@ export function GeneratorPanel({
     mode === 'motion-transfer'
       ? publicConfig?.genjutsu_motion_provider
       : publicConfig?.genjutsu_object_swap_provider;
+  const rawModel =
+    mode === 'motion-transfer'
+      ? publicConfig?.genjutsu_motion_model
+      : publicConfig?.genjutsu_object_swap_model;
+  // Wait for both fields rather than incorrectly quoting the Standard rate
+  // when the server has selected Higgsfield Genjutsu Light.
+  const pricingModel = typeof rawModel === 'string' && rawModel.trim()
+    ? rawModel
+    : null;
   const pricingProvider =
     rawProvider === 'higgsfield' ||
     rawProvider === 'seedance' ||
@@ -1619,6 +1628,7 @@ export function GeneratorPanel({
     const durationSeconds = video?.durationSeconds;
     if (
       !pricingProvider ||
+      !pricingModel ||
       typeof durationSeconds !== 'number' ||
       !Number.isFinite(durationSeconds) ||
       durationSeconds <= 0
@@ -1628,18 +1638,20 @@ export function GeneratorPanel({
     try {
       return estimateGenjutsuCreditsForProvider({
         provider: pricingProvider,
+        model: pricingModel,
         durationSeconds,
         resolution,
       });
     } catch {
       return null;
     }
-  }, [pricingProvider, resolution, video?.durationSeconds]);
+  }, [pricingProvider, pricingModel, resolution, video?.durationSeconds]);
 
   const previewEstimatedCredits = useMemo(() => {
     const durationSeconds = video?.durationSeconds;
     if (
       !pricingProvider ||
+      !pricingModel ||
       typeof durationSeconds !== 'number' ||
       !Number.isFinite(durationSeconds) ||
       durationSeconds < MIN_SOURCE_VIDEO_SECONDS
@@ -1649,13 +1661,14 @@ export function GeneratorPanel({
     try {
       return estimateGenjutsuCreditsForProvider({
         provider: pricingProvider,
+        model: pricingModel,
         durationSeconds: Math.min(durationSeconds, PREVIEW_DURATION_SECONDS),
         resolution: '480p',
       });
     } catch {
       return null;
     }
-  }, [pricingProvider, video?.durationSeconds]);
+  }, [pricingProvider, pricingModel, video?.durationSeconds]);
 
   const handleGenerate = async (kind: 'preview' | 'full' = 'full') => {
     if (!video || images.length === 0 || status === 'generating') return;
