@@ -22,7 +22,8 @@ export type HiggsfieldGenjutsuProfile = keyof typeof HIGGSFIELD_GENJUTSU_MODELS;
  * Other products and the homepage continue to use their existing env routing.
  *
  * These five templates previously followed the homepage's Genjutsu Light
- * configuration. Pinning them makes it safe to change the homepage later.
+ * configuration. Four remain on Light; Wassup in a Minute uses Standard.
+ * Pinning them makes it safe to change the homepage independently.
  * Review each product's output quality before choosing Standard or Light.
  */
 export const PRODUCT_GENJUTSU_MODEL_PROFILES: Partial<
@@ -32,7 +33,7 @@ export const PRODUCT_GENJUTSU_MODEL_PROFILES: Partial<
   'tiny-desk-ai': 'light',
   'chipmunks-dance': 'light',
   'bicep-heart': 'light',
-  'wassup-in-a-minute-ai': 'light',
+  'wassup-in-a-minute-ai': 'standard',
 };
 
 export function getProductGenjutsuModelProfile(
