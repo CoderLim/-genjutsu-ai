@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { HIGGSFIELD_GENJUTSU_MODELS } from './model-config';
+
 import {
   calculateGenjutsuCredits,
   canSeeSmokeCreditPack,
@@ -233,4 +235,43 @@ test('Seedance early-gate estimate matches the server customer quote without who
     }),
     8546
   );
+});
+
+
+test('Light fallback bills input and output with a 15-second source cap', () => {
+  const model = HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'];
+  assert.equal(
+    estimateGenjutsuListCost({ durationSeconds: 4, resolution: '480p', model }),
+    0.4
+  );
+  assert.equal(
+    estimateGenjutsuListCost({ durationSeconds: 15, resolution: '720p', model }),
+    3
+  );
+  assert.equal(
+    estimateGenjutsuListCost({ durationSeconds: 19, resolution: '1080p', model }),
+    6
+  );
+  assert.equal(
+    estimateGenjutsuListCost({
+      durationSeconds: 15,
+      resolution: '720p',
+      model: HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap'],
+    }),
+    15 * 0.681
+  );
+});
+
+test('browser credit quote distinguishes Light from Standard for same provider', () => {
+  const input = { provider: 'higgsfield' as const, durationSeconds: 15, resolution: '720p' as const };
+  const light = estimateGenjutsuCreditsForProvider({
+    ...input,
+    model: HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'],
+  });
+  const standard = estimateGenjutsuCreditsForProvider({
+    ...input,
+    model: HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap'],
+  });
+  assert.equal(light, calculateGenjutsuCredits(3));
+  assert.ok(light < standard);
 });
