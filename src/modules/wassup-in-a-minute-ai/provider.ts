@@ -20,7 +20,7 @@ export function resolveWassupInAMinuteAiProviderTarget(): GenjutsuProviderTarget
 
 /**
  * Persisted attempts keep the provider/model they were created with.
- * Wassup must stay on the homepage objects-swap target (Higgs Light).
+ * Accept previous Standard jobs as well as the current product-scoped Light pin.
  */
 export function assertWassupInAMinuteAiProviderBinding(
   provider: unknown,
@@ -38,7 +38,7 @@ export function assertWassupInAMinuteAiProviderBinding(
   }
   if (!isPersistedProductProviderTarget(provider, model, WASSUP_IN_A_MINUTE_AI_MODE)) {
     throw new WassupInAMinuteAiProviderBindingError(
-      `Wassup in a Minute AI requires homepage objects-swap provider/model (${String(provider)} / ${String(model)})`
+      `Wassup in a Minute AI does not support persisted provider/model (${String(provider)} / ${String(model)})`
     );
   }
 }
