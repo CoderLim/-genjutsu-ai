@@ -12,13 +12,10 @@ Allow Genjutsu Standard and Genjutsu Light to coexist on the same deployment wit
 
 Both Standard and Light use `provider: 'higgsfield'` and different model IDs. The shared submission, status, webhook, R2, and credit-task flow stays intact.
 
-The initial product pins preserve the intended Light behavior for these templates:
+The initial product pins select Light for four templates and Standard for Wassup in a Minute:
 
-- `glow-stick`
-- `tiny-desk-ai`
-- `chipmunks-dance`
-- `bicep-heart`
-- `wassup-in-a-minute-ai`
+- Light: `glow-stick`, `tiny-desk-ai`, `chipmunks-dance`, `bicep-heart`
+- Standard: `wassup-in-a-minute-ai`
 
 No other product is pinned as part of this change. Change an individual product to `'standard'` or remove its entry to return to env routing. Do not pin an unrelated Seedance-only product to Higgsfield Genjutsu without first validating its required API workflow.
 
@@ -34,7 +31,7 @@ Use the exact model for both live `/estimate/<model>` calls and fallback estimat
 
 - Standard: current list-rate fallback and 30-second source cap.
 - Light: API list-rate fallback $0.05 / $0.10 / $0.20 per billed second at 480p / 720p / 1080p; input + output seconds, with source capped at 15 seconds.
-- Frontend and SEO estimates now pass the actual selected product model for the five pinned pages.
+- Frontend and SEO estimates pass the actual selected product model for all five pinned pages, including the Standard-priced Wassup in a Minute page.
 - Homepage `/api/config/public` returns the resolved `provider` **and** `model` for both `motion-transfer` and `objects-swap`; `GeneratorPanel` uses both for full/preview quotes. If either is missing, no speculative quote is shown.
 - Live provider estimate takes precedence. The Light fallback assumes the generated duration matches the trimmed source and rounds seconds upward.
 
