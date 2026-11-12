@@ -38,15 +38,23 @@ export const PRODUCT_GENJUTSU_MODEL_PROFILES: Partial<
 export function getProductGenjutsuModelProfile(
   product: string | null | undefined
 ): HiggsfieldGenjutsuProfile | undefined {
-  if (!product || !Object.prototype.hasOwnProperty.call(PRODUCT_GENJUTSU_MODEL_PROFILES, product)) {
+  if (
+    !product ||
+    !Object.prototype.hasOwnProperty.call(
+      PRODUCT_GENJUTSU_MODEL_PROFILES,
+      product
+    )
+  ) {
     return undefined;
   }
   return PRODUCT_GENJUTSU_MODEL_PROFILES[product as GenjutsuProductId];
 }
 
 export function isHiggsfieldGenjutsuLightModel(model: string | null | undefined) {
-  return typeof model === 'string' &&
-    model.startsWith('higgsfield/genjutsu-light/');
+  return (
+    typeof model === 'string' &&
+    model.startsWith('higgsfield/genjutsu-light/')
+  );
 }
 
 export function isKnownHiggsfieldGenjutsuModel(
