@@ -2,78 +2,50 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { envConfigs } from '@/config';
-import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
-
+import { HIGGSFIELD_GENJUTSU_MODELS } from '@/modules/genjutsu/model-config';
 import { TINY_DESK_AI_MODE } from './constants';
 import {
   assertTinyDeskAiProviderBinding,
-  resolveTinyDeskAiProviderTarget,
   TinyDeskAiProviderBindingError,
+  resolveTinyDeskAiProviderTarget,
 } from './provider';
 
-const originalProduct = envConfigs.genjutsu_product_provider;
-const originalObjectSwap = envConfigs.genjutsu_object_swap_provider;
-
-function restore() {
-  envConfigs.genjutsu_product_provider = originalProduct;
-  envConfigs.genjutsu_object_swap_provider = originalObjectSwap;
-}
-
-test('Tiny Desk resolves to homepage objects-swap target', () => {
-  envConfigs.genjutsu_object_swap_provider = 'higgsfield';
-  envConfigs.genjutsu_product_provider = 'seedance-wavespeed';
-  try {
-    const target = resolveTinyDeskAiProviderTarget();
-    const homepage = resolveGenjutsuProviderTarget(TINY_DESK_AI_MODE);
-    assert.deepEqual(target, homepage);
-    assert.equal(target.provider, 'higgsfield');
-  } finally {
-    restore();
-  }
+test('tiny-desk-ai pins Genjutsu Light independently of the homepage', () => {
+  assert.deepEqual(resolveTinyDeskAiProviderTarget(), {
+    provider: 'higgsfield',
+    model: HIGGSFIELD_GENJUTSU_MODELS.light[TINY_DESK_AI_MODE],
+  });
 });
 
-test('GENJUTSU_PRODUCT_PROVIDER does not override Tiny Desk', () => {
-  envConfigs.genjutsu_object_swap_provider = 'higgsfield';
-  envConfigs.genjutsu_product_provider = 'seedance-higgsfield';
-  try {
-    assert.deepEqual(
-      resolveTinyDeskAiProviderTarget(),
-      resolveGenjutsuProviderTarget(TINY_DESK_AI_MODE)
-    );
-    assert.notEqual(
-      resolveTinyDeskAiProviderTarget().provider,
-      'seedance-higgsfield'
-    );
-  } finally {
-    restore();
-  }
+test('tiny-desk-ai accepts persisted Light and historical Standard tasks', () => {
+  assert.doesNotThrow(() =>
+    assertTinyDeskAiProviderBinding('higgsfield', HIGGSFIELD_GENJUTSU_MODELS.light[TINY_DESK_AI_MODE])
+  );
+  assert.doesNotThrow(() =>
+    assertTinyDeskAiProviderBinding('higgsfield', HIGGSFIELD_GENJUTSU_MODELS.standard[TINY_DESK_AI_MODE])
+  );
 });
 
-test('Tiny Desk provider binding accepts homepage target only', () => {
-  envConfigs.genjutsu_object_swap_provider = 'higgsfield';
-  envConfigs.genjutsu_product_provider = '';
+test('tiny-desk-ai rejects unrelated providers and unknown models', () => {
+  assert.throws(
+    () => assertTinyDeskAiProviderBinding('seedance-wavespeed', 'bytedance/seedance-2.5/video-edit'),
+    TinyDeskAiProviderBindingError
+  );
+  assert.throws(
+    () => assertTinyDeskAiProviderBinding('higgsfield', 'not-an-allowed-model'),
+    TinyDeskAiProviderBindingError
+  );
+});
+
+test('Tiny Desk ignores global and product provider env overrides', () => {
+  const previousMode = envConfigs.genjutsu_object_swap_provider;
+  const previousProduct = envConfigs.genjutsu_product_provider;
   try {
-    const expected = resolveTinyDeskAiProviderTarget();
-    assert.doesNotThrow(() =>
-      assertTinyDeskAiProviderBinding(expected.provider, expected.model)
-    );
-    assert.throws(
-      () =>
-        assertTinyDeskAiProviderBinding(
-          'seedance-wavespeed',
-          'bytedance/seedance-2.5/video-edit'
-        ),
-      TinyDeskAiProviderBindingError
-    );
-    assert.throws(
-      () =>
-        assertTinyDeskAiProviderBinding(
-          'seedance-higgsfield',
-          'bytedance/seedance-2.5/reference-to-video'
-        ),
-      TinyDeskAiProviderBindingError
-    );
+    envConfigs.genjutsu_object_swap_provider = 'seedance-wavespeed';
+    envConfigs.genjutsu_product_provider = 'seedance-higgsfield';
+    assert.equal(resolveTinyDeskAiProviderTarget().model, HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap']);
   } finally {
-    restore();
+    envConfigs.genjutsu_object_swap_provider = previousMode;
+    envConfigs.genjutsu_product_provider = previousProduct;
   }
 });

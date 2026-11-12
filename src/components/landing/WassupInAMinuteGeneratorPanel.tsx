@@ -410,8 +410,10 @@ function PhotoSlot({
 
 export function WassupInAMinuteGeneratorPanel({
   creditProvider,
+  creditModel,
 }: {
   creditProvider: GenjutsuProvider;
+  creditModel: string;
 }) {
   const { data: session, isPending: sessionPending } = useSession();
   const creditsQuery = useUserCredits(Boolean(session?.user));
@@ -450,20 +452,22 @@ export function WassupInAMinuteGeneratorPanel({
   const estimatedCredits = useMemo(() => {
     return estimateGenjutsuCreditsForProvider({
       provider: creditProvider,
+      model: creditModel,
       durationSeconds: WASSUP_IN_A_MINUTE_AI_TEMPLATE_DURATION_SECONDS,
       resolution,
       aspectRatio: WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO,
     });
-  }, [creditProvider, resolution]);
+  }, [creditProvider, creditModel, resolution]);
 
   const previewEstimatedCredits = useMemo(() => {
     return estimateGenjutsuCreditsForProvider({
       provider: creditProvider,
+      model: creditModel,
       durationSeconds: PREVIEW_DURATION_SECONDS,
       resolution: '480p',
       aspectRatio: WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO,
     });
-  }, [creditProvider]);
+  }, [creditProvider, creditModel]);
 
   const busy =
     phase === 'uploading' ||

@@ -70,7 +70,7 @@ function howToJsonLd() {
 }
 
 function ChipmunksDancePage() {
-  const { creditProvider } = Route.useLoaderData();
+  const { creditProvider, creditModel } = Route.useLoaderData();
   const canonical = absoluteUrl(PAGE_PATH);
 
   return (
@@ -111,7 +111,7 @@ function ChipmunksDancePage() {
               <p className="mb-3 text-center text-xs font-medium tracking-wide text-white/45 uppercase sm:text-left">
                 {m['site.chipmunks.generator_badge']()}
               </p>
-              <ChipmunksDanceGeneratorPanel creditProvider={creditProvider} />
+              <ChipmunksDanceGeneratorPanel creditProvider={creditProvider} creditModel={creditModel} />
               <p className="mt-3 text-sm leading-6 text-white/42">
                 {m['site.chipmunks.generator_note']()}
               </p>
@@ -143,7 +143,7 @@ export const Route = createFileRoute('/chipmunks-dance')({
   loader: () => {
     const locale = getLocale();
     const target = resolveChipmunksDanceProviderTarget();
-    return { locale, creditProvider: target.provider };
+    return { locale, creditProvider: target.provider, creditModel: target.model };
   },
   head: ({ loaderData }) => {
     const locale = loaderData?.locale ?? 'en';

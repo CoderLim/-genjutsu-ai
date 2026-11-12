@@ -5,6 +5,7 @@ import {
 } from '@/lib/ai-credits';
 
 import { estimateHiggsfieldSeedanceTokenCost } from './seedance-higgsfield';
+import { isHiggsfieldGenjutsuLightModel } from './model-config';
 
 /** @deprecated Prefer AI_CREDITS_PER_USD from @/lib/ai-credits */
 export { AI_CREDITS_PER_USD as GENJUTSU_CREDITS_PER_USD };
@@ -145,16 +146,33 @@ export function calculateGenjutsuCredits(providerCostUsd: number) {
   return calculateProviderCredits(providerCostUsd);
 }
 
+/** Higgsfield API Genjutsu Light: $/billable second (source + generated). */
+export const GENJUTSU_LIGHT_RATE_USD_PER_BILLED_SECOND: Record<
+  GenjutsuBillableResolution,
+  number
+> = {
+  '480p': 0.05,
+  '720p': 0.1,
+  '1080p': 0.2,
+};
+
 export function estimateGenjutsuListCost(input: {
   durationSeconds: number;
   resolution: GenjutsuBillableResolution;
+  model?: string;
 }) {
   if (!Number.isFinite(input.durationSeconds) || input.durationSeconds <= 0) {
     throw new Error('durationSeconds must be a positive finite number');
   }
 
-  // Higgsfield trims Genjutsu source video to 30 seconds and bills whole
-  // input seconds rounded upward.
+  if (isHiggsfieldGenjutsuLightModel(input.model)) {
+    // Light consumes the first 15s of source. Source and output durations
+    // both count; round up conservatively for the fallback quote.
+    const clipSeconds = Math.min(15, Math.ceil(input.durationSeconds));
+    return 2 * clipSeconds * GENJUTSU_LIGHT_RATE_USD_PER_BILLED_SECOND[input.resolution];
+  }
+
+  // Standard: source input is trimmed to 30s and rounded upward.
   const billedSeconds = Math.min(30, Math.ceil(input.durationSeconds));
   return billedSeconds * GENJUTSU_LIST_RATE_USD_PER_SECOND[input.resolution];
 }
@@ -162,6 +180,7 @@ export function estimateGenjutsuListCost(input: {
 export function estimateGenjutsuCredits(input: {
   durationSeconds: number;
   resolution: GenjutsuBillableResolution;
+  model?: string;
 }) {
   return calculateGenjutsuCredits(estimateGenjutsuListCost(input));
 }
@@ -200,6 +219,8 @@ export function estimateGenjutsuCreditsForProvider(input: {
     | 'seedance-wavespeed';
   durationSeconds: number;
   resolution: GenjutsuBillableResolution;
+  /** The actual persisted/requested model; required for Light quotes. */
+  model?: string;
   /** Required for seedance-higgsfield token pricing (output pixel grid). */
   aspectRatio?: '16:9' | '4:3' | '1:1' | '3:4' | '9:16' | '21:9';
 }) {

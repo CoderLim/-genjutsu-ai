@@ -132,7 +132,7 @@ function breadcrumbJsonLd(canonical: string) {
 }
 
 function TinyDeskAiPage() {
-  const { creditProvider } = Route.useLoaderData();
+  const { creditProvider, creditModel } = Route.useLoaderData();
   const canonical = absoluteUrl(PAGE_PATH);
 
   return (
@@ -180,7 +180,7 @@ function TinyDeskAiPage() {
               id="generator"
               className="mt-8 scroll-mt-24 text-left sm:mt-10"
             >
-              <TinyDeskAiGeneratorPanel creditProvider={creditProvider} />
+              <TinyDeskAiGeneratorPanel creditProvider={creditProvider} creditModel={creditModel} />
             </div>
 
             <p className="mx-auto mt-5 max-w-2xl text-sm leading-6 text-white/42">
@@ -286,7 +286,7 @@ export const Route = createFileRoute('/tiny-desk-ai')({
   loader: () => {
     const locale = getLocale();
     const target = resolveTinyDeskAiProviderTarget();
-    return { locale, creditProvider: target.provider };
+    return { locale, creditProvider: target.provider, creditModel: target.model };
   },
   head: ({ loaderData }) => {
     const locale = loaderData?.locale ?? 'en';

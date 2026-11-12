@@ -1,4 +1,9 @@
 import { envConfigs } from '@/config';
+import {
+  getProductGenjutsuModelProfile,
+  HIGGSFIELD_GENJUTSU_MODELS,
+  isKnownHiggsfieldGenjutsuModel,
+} from './model-config';
 
 import type {
   GenjutsuMode,
@@ -161,24 +166,37 @@ export function resolveGenjutsuProviderTarget(
 }
 
 /**
- * Product pages (Crazy Frog / Smalltown) share the homepage mode env routers
- * (`GENJUTSU_MOTION_PROVIDER` / `GENJUTSU_OBJECT_SWAP_PROVIDER`). Optional
- * `GENJUTSU_PRODUCT_PROVIDER` overrides only allowlisted product pages.
+ * The homepage price UI must receive the exact target for each mode.
+ * Higgsfield Standard and Light have the same provider but different rates.
+ * Never include provider credentials in this public configuration.
+ */
+export function resolveGenjutsuPublicPricingConfig() {
+  const motion = resolveGenjutsuProviderTarget('motion-transfer');
+  const objectSwap = resolveGenjutsuProviderTarget('objects-swap');
+  return {
+    genjutsu_motion_provider: motion.provider,
+    genjutsu_motion_model: motion.model,
+    genjutsu_object_swap_provider: objectSwap.provider,
+    genjutsu_object_swap_model: objectSwap.model,
+  };
+}
+
+/**
+ * Explicit product model pins win. Unpinned products keep their existing mode
+ * env routers and optional GENJUTSU_PRODUCT_PROVIDER override.
  */
 export function resolveProductProviderTarget(
   product: string | null | undefined,
   mode: GenjutsuMode
 ): GenjutsuProviderTarget {
-  // Glow Stick / Tiny Desk / Chipmunks / Bicep Heart / Wassup track homepage
-  // Genjutsu Light (ignore PRODUCT_PROVIDER).
-  if (
-    product === GLOW_STICK_PRODUCT ||
-    product === TINY_DESK_AI_PRODUCT ||
-    product === CHIPMUNKS_DANCE_PRODUCT ||
-    product === BICEP_HEART_PRODUCT ||
-    product === WASSUP_IN_A_MINUTE_AI_PRODUCT
-  ) {
-    return resolveGenjutsuProviderTarget(mode);
+  // Explicit product-model pins take precedence over all env provider routers.
+  // The homepage and unlisted products retain their existing env behavior.
+  const modelProfile = getProductGenjutsuModelProfile(product);
+  if (modelProfile) {
+    return {
+      provider: 'higgsfield',
+      model: HIGGSFIELD_GENJUTSU_MODELS[modelProfile][mode],
+    };
   }
 
   const productOverride = envConfigs.genjutsu_product_provider?.trim();
@@ -190,6 +208,29 @@ export function resolveProductProviderTarget(
   }
 
   return resolveGenjutsuProviderTarget(mode);
+}
+
+/**
+ * Persisted product tasks were bound by the server when the attempt was created.
+ * Allow known Standard/Light targets across subsequent env/profile changes.
+ * This check is intentionally limited to the five Higgsfield Genjutsu product
+ * pages. Do not reuse it in Seedance-family product assert functions: those
+ * pages have different provider/model contracts.
+ */
+export function isPersistedProductProviderTarget(
+  provider: unknown,
+  model: unknown,
+  mode: GenjutsuMode
+): boolean {
+  if (typeof model !== 'string' || !model.trim()) return false;
+  if (provider === 'higgsfield') {
+    const configured =
+      mode === 'motion-transfer'
+        ? envConfigs.higgsfield_genjutsu_motion_model?.trim()
+        : envConfigs.higgsfield_genjutsu_object_swap_model?.trim();
+    return isKnownHiggsfieldGenjutsuModel(model, mode) || model === configured;
+  }
+  return false;
 }
 
 /** Resolve the objects-swap model pair for an already-persisted provider. */
@@ -245,7 +286,15 @@ function resolveGenjutsuProviderTargetForProvider(
         'bytedance/seedance-2.5/us/reference-to-video',
     };
   }
-  return resolveGenjutsuProviderTarget(mode);
+  return {
+    provider: 'higgsfield',
+    model:
+      mode === 'motion-transfer'
+        ? envConfigs.higgsfield_genjutsu_motion_model?.trim() ||
+          HIGGSFIELD_GENJUTSU_MODELS.standard['motion-transfer']
+        : envConfigs.higgsfield_genjutsu_object_swap_model?.trim() ||
+          HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap'],
+  };
 }
 
 type SeedanceReferenceTokens = {

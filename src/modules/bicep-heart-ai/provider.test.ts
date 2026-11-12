@@ -1,34 +1,37 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import test from 'node:test';
 
+import { HIGGSFIELD_GENJUTSU_MODELS } from '@/modules/genjutsu/model-config';
+import { BICEP_HEART_AI_MODE } from './constants';
 import {
   assertBicepHeartAiProviderBinding,
   BicepHeartAiProviderBindingError,
   resolveBicepHeartAiProviderTarget,
 } from './provider';
 
-test('resolveBicepHeartAiProviderTarget follows homepage objects-swap', () => {
-  const target = resolveBicepHeartAiProviderTarget();
-  assert.equal(typeof target.provider, 'string');
-  assert.equal(typeof target.model, 'string');
-  assert.ok(target.model.length > 0);
+test('bicep-heart-ai pins Genjutsu Light independently of the homepage', () => {
+  assert.deepEqual(resolveBicepHeartAiProviderTarget(), {
+    provider: 'higgsfield',
+    model: HIGGSFIELD_GENJUTSU_MODELS.light[BICEP_HEART_AI_MODE],
+  });
 });
 
-test('assertBicepHeartAiProviderBinding accepts current homepage target', () => {
-  const expected = resolveBicepHeartAiProviderTarget();
+test('bicep-heart-ai accepts persisted Light and historical Standard tasks', () => {
   assert.doesNotThrow(() =>
-    assertBicepHeartAiProviderBinding(expected.provider, expected.model)
+    assertBicepHeartAiProviderBinding('higgsfield', HIGGSFIELD_GENJUTSU_MODELS.light[BICEP_HEART_AI_MODE])
+  );
+  assert.doesNotThrow(() =>
+    assertBicepHeartAiProviderBinding('higgsfield', HIGGSFIELD_GENJUTSU_MODELS.standard[BICEP_HEART_AI_MODE])
   );
 });
 
-test('assertBicepHeartAiProviderBinding rejects mismatched model', () => {
-  const expected = resolveBicepHeartAiProviderTarget();
+test('bicep-heart-ai rejects unrelated providers and unknown models', () => {
   assert.throws(
-    () =>
-      assertBicepHeartAiProviderBinding(
-        expected.provider,
-        'not-the-right-model'
-      ),
+    () => assertBicepHeartAiProviderBinding('seedance-wavespeed', 'bytedance/seedance-2.5/video-edit'),
+    BicepHeartAiProviderBindingError
+  );
+  assert.throws(
+    () => assertBicepHeartAiProviderBinding('higgsfield', 'not-an-allowed-model'),
     BicepHeartAiProviderBindingError
   );
 });

@@ -56,7 +56,7 @@ function breadcrumbJsonLd(canonical: string) {
 }
 
 function BicepHeartAiPage() {
-  const { creditProvider } = Route.useLoaderData();
+  const { creditProvider, creditModel } = Route.useLoaderData();
   const canonical = absoluteUrl(PAGE_PATH);
 
   return (
@@ -86,7 +86,7 @@ function BicepHeartAiPage() {
             id="generator"
             className="mx-auto mt-8 w-full max-w-5xl scroll-mt-24 text-left sm:mt-10"
           >
-            <BicepHeartAiGeneratorPanel creditProvider={creditProvider} />
+            <BicepHeartAiGeneratorPanel creditProvider={creditProvider} creditModel={creditModel} />
           </div>
         </section>
       </div>
@@ -114,7 +114,7 @@ export const Route = createFileRoute('/bicep-heart-ai')({
   loader: () => {
     const locale = getLocale();
     const target = resolveBicepHeartAiProviderTarget();
-    return { locale, creditProvider: target.provider };
+    return { locale, creditProvider: target.provider, creditModel: target.model };
   },
   head: ({ loaderData }) => {
     const locale = loaderData?.locale ?? 'en';

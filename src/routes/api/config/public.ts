@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { filterPublicConfigs, getAllConfigs } from '@/modules/config/service';
-import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
+import { resolveGenjutsuPublicPricingConfig } from '@/modules/genjutsu/workflow';
 import { respData } from '@/lib/resp';
 
 const noStore = {
@@ -59,12 +59,9 @@ async function GET({ request }: { request: Request }) {
     configs.email_verification_enabled === 'true' && emailConfigured
       ? 'true'
       : 'false';
-  // Safe-to-expose provider identifiers from the same resolver used by
-  // /api/genjutsu/generate. Never expose API keys or model credentials.
-  result.genjutsu_motion_provider =
-    resolveGenjutsuProviderTarget('motion-transfer').provider;
-  result.genjutsu_object_swap_provider =
-    resolveGenjutsuProviderTarget('objects-swap').provider;
+  // Safe-to-expose identifiers from the same server resolver used by attempt.
+  // Exposing only provider=higgsfield would mix up Standard and Light quotes.
+  Object.assign(result, resolveGenjutsuPublicPricingConfig());
   return respData(result, noStore);
 }
 

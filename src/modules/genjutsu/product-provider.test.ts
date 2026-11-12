@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { envConfigs } from '@/config';
+
+import { HIGGSFIELD_GENJUTSU_MODELS } from './model-config';
+
 import {
   A2O_LITE_AI_PRODUCT,
   BICEP_HEART_PRODUCT,
@@ -15,6 +19,7 @@ import {
   GLOW_STICK_PRODUCT,
   isGenjutsuProductId,
   resolveGenjutsuProviderTarget,
+  resolveGenjutsuPublicPricingConfig,
   resolveProductProviderTarget,
   SAY_IT_RIGHT_AI_PRODUCT,
   SHAN_SHEN_BU_PRODUCT,
@@ -105,49 +110,44 @@ test('gas-station-dance-ai follows the mode env router', () => {
   assert.deepEqual(target, fallback);
 });
 
-test('glow-stick follows homepage objects-swap (ignores product provider)', () => {
-  const fallback = resolveGenjutsuProviderTarget('objects-swap');
-  const target = resolveProductProviderTarget(
-    GLOW_STICK_PRODUCT,
-    'objects-swap'
-  );
-  assert.deepEqual(target, fallback);
+test('glow-stick is pinned to Genjutsu Light rather than the homepage', () => {
+  const target = resolveProductProviderTarget(GLOW_STICK_PRODUCT, 'objects-swap');
+  assert.deepEqual(target, {
+    provider: 'higgsfield',
+    model: HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'],
+  });
 });
 
-test('chipmunks-dance follows homepage objects-swap (ignores product provider)', () => {
-  const fallback = resolveGenjutsuProviderTarget('objects-swap');
-  const target = resolveProductProviderTarget(
-    CHIPMUNKS_DANCE_PRODUCT,
-    'objects-swap'
-  );
-  assert.deepEqual(target, fallback);
+test('chipmunks-dance is pinned to Genjutsu Light rather than the homepage', () => {
+  const target = resolveProductProviderTarget(CHIPMUNKS_DANCE_PRODUCT, 'objects-swap');
+  assert.deepEqual(target, {
+    provider: 'higgsfield',
+    model: HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'],
+  });
 });
 
-test('tiny-desk-ai follows homepage objects-swap (ignores product provider)', () => {
-  const fallback = resolveGenjutsuProviderTarget('objects-swap');
-  const target = resolveProductProviderTarget(
-    TINY_DESK_AI_PRODUCT,
-    'objects-swap'
-  );
-  assert.deepEqual(target, fallback);
+test('tiny-desk-ai is pinned to Genjutsu Light rather than the homepage', () => {
+  const target = resolveProductProviderTarget(TINY_DESK_AI_PRODUCT, 'objects-swap');
+  assert.deepEqual(target, {
+    provider: 'higgsfield',
+    model: HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'],
+  });
 });
 
-test('bicep-heart follows homepage objects-swap (ignores product provider)', () => {
-  const fallback = resolveGenjutsuProviderTarget('objects-swap');
-  const target = resolveProductProviderTarget(
-    BICEP_HEART_PRODUCT,
-    'objects-swap'
-  );
-  assert.deepEqual(target, fallback);
+test('bicep-heart is pinned to Genjutsu Light rather than the homepage', () => {
+  const target = resolveProductProviderTarget(BICEP_HEART_PRODUCT, 'objects-swap');
+  assert.deepEqual(target, {
+    provider: 'higgsfield',
+    model: HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'],
+  });
 });
 
-test('wassup-in-a-minute-ai follows homepage objects-swap (ignores product provider)', () => {
-  const fallback = resolveGenjutsuProviderTarget('objects-swap');
-  const target = resolveProductProviderTarget(
-    WASSUP_IN_A_MINUTE_AI_PRODUCT,
-    'objects-swap'
-  );
-  assert.deepEqual(target, fallback);
+test('wassup-in-a-minute-ai is pinned to Genjutsu Standard rather than the homepage', () => {
+  const target = resolveProductProviderTarget(WASSUP_IN_A_MINUTE_AI_PRODUCT, 'objects-swap');
+  assert.deepEqual(target, {
+    provider: 'higgsfield',
+    model: HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap'],
+  });
 });
 
 test('burning-bridges-ai follows the mode env router', () => {
@@ -218,4 +218,93 @@ test('isGenjutsuProductId allowlist', () => {
   assert.equal(isGenjutsuProductId(WASSUP_IN_A_MINUTE_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId('bulin-47'), false);
   assert.equal(isGenjutsuProductId(''), false);
+});
+
+
+test('Standard and Light can coexist with one Higgsfield provider', () => {
+  const previousProvider = envConfigs.genjutsu_object_swap_provider;
+  const previousProductProvider = envConfigs.genjutsu_product_provider;
+  const previousModel = envConfigs.higgsfield_genjutsu_object_swap_model;
+  try {
+    envConfigs.genjutsu_product_provider = '';
+    envConfigs.genjutsu_object_swap_provider = 'higgsfield';
+    envConfigs.higgsfield_genjutsu_object_swap_model =
+      HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap'];
+
+    const pinned = resolveProductProviderTarget(
+      CHIPMUNKS_DANCE_PRODUCT,
+      'objects-swap'
+    );
+    const unpinned = resolveProductProviderTarget(
+      SMALLTOWN_BOY_DANCE_PRODUCT,
+      'objects-swap'
+    );
+    assert.equal(pinned.provider, 'higgsfield');
+    assert.equal(unpinned.provider, 'higgsfield');
+    assert.equal(pinned.model, HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap']);
+    assert.equal(unpinned.model, HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap']);
+  } finally {
+    envConfigs.genjutsu_object_swap_provider = previousProvider;
+    envConfigs.genjutsu_product_provider = previousProductProvider;
+    envConfigs.higgsfield_genjutsu_object_swap_model = previousModel;
+  }
+});
+
+test('unknown inherited property names never activate product model overrides', () => {
+  assert.deepEqual(
+    resolveProductProviderTarget('constructor', 'objects-swap'),
+    resolveGenjutsuProviderTarget('objects-swap')
+  );
+});
+
+test('public homepage config reports exact model for each mode even with one Higgsfield provider', () => {
+  const original = {
+    motionProvider: envConfigs.genjutsu_motion_provider,
+    motionModel: envConfigs.higgsfield_genjutsu_motion_model,
+    swapProvider: envConfigs.genjutsu_object_swap_provider,
+    swapModel: envConfigs.higgsfield_genjutsu_object_swap_model,
+  };
+  try {
+    envConfigs.genjutsu_motion_provider = 'higgsfield';
+    envConfigs.genjutsu_object_swap_provider = 'higgsfield';
+    envConfigs.higgsfield_genjutsu_motion_model =
+      HIGGSFIELD_GENJUTSU_MODELS.standard['motion-transfer'];
+    envConfigs.higgsfield_genjutsu_object_swap_model =
+      HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'];
+
+    assert.deepEqual(resolveGenjutsuPublicPricingConfig(), {
+      genjutsu_motion_provider: 'higgsfield',
+      genjutsu_motion_model:
+        HIGGSFIELD_GENJUTSU_MODELS.standard['motion-transfer'],
+      genjutsu_object_swap_provider: 'higgsfield',
+      genjutsu_object_swap_model:
+        HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap'],
+    });
+  } finally {
+    envConfigs.genjutsu_motion_provider = original.motionProvider;
+    envConfigs.higgsfield_genjutsu_motion_model = original.motionModel;
+    envConfigs.genjutsu_object_swap_provider = original.swapProvider;
+    envConfigs.higgsfield_genjutsu_object_swap_model = original.swapModel;
+  }
+});
+
+test('public homepage config tracks non-Higgsfield model routing independently', () => {
+  const original = {
+    motionProvider: envConfigs.genjutsu_motion_provider,
+    swapProvider: envConfigs.genjutsu_object_swap_provider,
+  };
+  try {
+    envConfigs.genjutsu_motion_provider = 'seedance-wavespeed';
+    envConfigs.genjutsu_object_swap_provider = 'higgsfield';
+    const fields = resolveGenjutsuPublicPricingConfig();
+    const motion = resolveGenjutsuProviderTarget('motion-transfer');
+    const swap = resolveGenjutsuProviderTarget('objects-swap');
+    assert.equal(fields.genjutsu_motion_provider, motion.provider);
+    assert.equal(fields.genjutsu_motion_model, motion.model);
+    assert.equal(fields.genjutsu_object_swap_provider, swap.provider);
+    assert.equal(fields.genjutsu_object_swap_model, swap.model);
+  } finally {
+    envConfigs.genjutsu_motion_provider = original.motionProvider;
+    envConfigs.genjutsu_object_swap_provider = original.swapProvider;
+  }
 });

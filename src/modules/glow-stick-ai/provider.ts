@@ -1,7 +1,10 @@
 import type { GenjutsuProviderTarget } from '@/modules/genjutsu/types';
-import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
+import {
+  isPersistedProductProviderTarget,
+  resolveProductProviderTarget,
+} from '@/modules/genjutsu/workflow';
 
-import { GLOW_STICK_AI_MODE } from './constants';
+import { GLOW_STICK_AI_MODE, GLOW_STICK_AI_PRODUCT_ID } from './constants';
 
 export class GlowStickAiProviderBindingError extends Error {
   constructor(message: string) {
@@ -10,17 +13,14 @@ export class GlowStickAiProviderBindingError extends Error {
   }
 }
 
-/**
- * Homepage Genjutsu Light parity: ignore `GENJUTSU_PRODUCT_PROVIDER` and follow
- * `GENJUTSU_OBJECT_SWAP_PROVIDER` (production: higgsfield / genjutsu-light).
- */
+/** Resolve this product's server-owned model pin (independent of homepage env). */
 export function resolveGlowStickAiProviderTarget(): GenjutsuProviderTarget {
-  return resolveGenjutsuProviderTarget(GLOW_STICK_AI_MODE);
+  return resolveProductProviderTarget(GLOW_STICK_AI_PRODUCT_ID, GLOW_STICK_AI_MODE);
 }
 
 /**
  * Persisted attempts keep the provider/model they were created with.
- * Glow Stick must stay on the homepage objects-swap target (Higgs Light).
+ * Accept previous Standard jobs as well as the current product-scoped Light pin.
  */
 export function assertGlowStickAiProviderBinding(
   provider: unknown,
@@ -36,10 +36,9 @@ export function assertGlowStickAiProviderBinding(
       'Glow Stick AI task is missing a provider/model binding'
     );
   }
-  const expected = resolveGenjutsuProviderTarget(GLOW_STICK_AI_MODE);
-  if (provider !== expected.provider || model !== expected.model) {
+  if (!isPersistedProductProviderTarget(provider, model, GLOW_STICK_AI_MODE)) {
     throw new GlowStickAiProviderBindingError(
-      `Glow Stick AI requires homepage objects-swap provider/model (${expected.provider} / ${expected.model})`
+      `Glow Stick AI does not support persisted provider/model (${String(provider)} / ${String(model)})`
     );
   }
 }

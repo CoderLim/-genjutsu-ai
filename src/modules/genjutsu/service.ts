@@ -285,6 +285,7 @@ async function resolveHiggsfieldProviderCost(input: {
     const providerCostUsd = estimateGenjutsuListCost({
       durationSeconds,
       resolution: input.resolution,
+      model: input.model,
     });
     return {
       providerCostUsd,
@@ -336,6 +337,7 @@ async function resolveHiggsfieldProviderCost(input: {
   const providerCostUsd = estimateGenjutsuListCost({
     durationSeconds,
     resolution: input.resolution,
+    model: input.model,
   });
 
   return {
