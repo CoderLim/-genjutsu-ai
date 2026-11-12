@@ -417,8 +417,10 @@ function PhotoSlot({
 
 export function TinyDeskAiGeneratorPanel({
   creditProvider,
+  creditModel,
 }: {
   creditProvider: GenjutsuProvider;
+  creditModel: string;
 }) {
   const { data: session, isPending: sessionPending } = useSession();
   const creditsQuery = useUserCredits(Boolean(session?.user));
@@ -460,20 +462,22 @@ export function TinyDeskAiGeneratorPanel({
   const estimatedCredits = useMemo(() => {
     return estimateGenjutsuCreditsForProvider({
       provider: creditProvider,
+      model: creditModel,
       durationSeconds: TINY_DESK_AI_TEMPLATE_DURATION_SECONDS,
       resolution,
       aspectRatio: TINY_DESK_AI_ASPECT_RATIO,
     });
-  }, [creditProvider, resolution]);
+  }, [creditProvider, creditModel, resolution]);
 
   const previewEstimatedCredits = useMemo(() => {
     return estimateGenjutsuCreditsForProvider({
       provider: creditProvider,
+      model: creditModel,
       durationSeconds: PREVIEW_DURATION_SECONDS,
       resolution: '480p',
       aspectRatio: TINY_DESK_AI_ASPECT_RATIO,
     });
-  }, [creditProvider]);
+  }, [creditProvider, creditModel]);
 
   const busy =
     phase === 'uploading' ||
