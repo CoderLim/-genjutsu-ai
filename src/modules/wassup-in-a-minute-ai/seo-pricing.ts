@@ -35,16 +35,18 @@ export function getWassupInAMinuteAiSeoPriceAmounts(): WassupInAMinuteAiSeoPrice
   const starter = GENJUTSU_CREDIT_PACKS[0]!;
   const creator = getDisplayCreditPack();
   const usdPerCredit = getDisplayUsdPerCredit();
-  const provider = resolveWassupInAMinuteAiProviderTarget().provider;
+  const { provider, model } = resolveWassupInAMinuteAiProviderTarget();
 
   const credits480 = estimateGenjutsuCreditsForProvider({
     provider,
+    model,
     durationSeconds: WASSUP_IN_A_MINUTE_AI_TEMPLATE_DURATION_SECONDS,
     resolution: '480p',
     aspectRatio: WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO,
   });
   const credits720 = estimateGenjutsuCreditsForProvider({
     provider,
+    model,
     durationSeconds: WASSUP_IN_A_MINUTE_AI_TEMPLATE_DURATION_SECONDS,
     resolution: '720p',
     aspectRatio: WASSUP_IN_A_MINUTE_AI_ASPECT_RATIO,
