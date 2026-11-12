@@ -59,12 +59,16 @@ async function GET({ request }: { request: Request }) {
     configs.email_verification_enabled === 'true' && emailConfigured
       ? 'true'
       : 'false';
-  // Safe-to-expose provider identifiers from the same resolver used by
-  // /api/genjutsu/generate. Never expose API keys or model credentials.
-  result.genjutsu_motion_provider =
-    resolveGenjutsuProviderTarget('motion-transfer').provider;
-  result.genjutsu_object_swap_provider =
-    resolveGenjutsuProviderTarget('objects-swap').provider;
+  // Provider and model must come from the same resolver as /api/genjutsu/attempt.
+  // Both Genjutsu Standard and Light use provider=higgsfield; exposing only the
+  // provider would make the homepage quote Standard even when Light is selected.
+  // These identifiers are public; never expose API keys or model credentials.
+  const motionTarget = resolveGenjutsuProviderTarget('motion-transfer');
+  const objectSwapTarget = resolveGenjutsuProviderTarget('objects-swap');
+  result.genjutsu_motion_provider = motionTarget.provider;
+  result.genjutsu_motion_model = motionTarget.model;
+  result.genjutsu_object_swap_provider = objectSwapTarget.provider;
+  result.genjutsu_object_swap_model = objectSwapTarget.model;
   return respData(result, noStore);
 }
 
