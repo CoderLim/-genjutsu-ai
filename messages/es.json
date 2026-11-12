@@ -1691,6 +1691,8 @@
   "site.generator.failed": "Error al generar",
   "site.generator.failed_status": "Error de generación ({status})",
   "site.generator.failed_unexpected": "La generación falló inesperadamente",
+  "site.generator.prompt_blocked": "Este prompt no cumple nuestras normas de contenido.",
+  "site.generator.prompt_review": "Este prompt necesita una revisión rápida. Inténtalo de nuevo más tarde.",
   "site.generator.full_video": "Vídeo completo",
   "site.generator.generate": "Generar",
   "site.generator.generate_full": "Generar vídeo completo",

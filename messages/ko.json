@@ -1691,6 +1691,8 @@
   "site.generator.failed": "생성 실패",
   "site.generator.failed_status": "생성 실패({status})",
   "site.generator.failed_unexpected": "예기치 않은 오류로 생성에 실패했습니다",
+  "site.generator.prompt_blocked": "이 프롬프트는 콘텐츠 가이드라인을 충족하지 않습니다.",
+  "site.generator.prompt_review": "이 프롬프트는 검토가 필요합니다. 잠시 후 다시 시도해 주세요.",
   "site.generator.full_video": "전체 영상",
   "site.generator.generate": "생성하기",
   "site.generator.generate_full": "전체 영상 생성",

@@ -1691,6 +1691,8 @@
   "site.generator.failed": "Falha na geração",
   "site.generator.failed_status": "Falha na geração ({status})",
   "site.generator.failed_unexpected": "A geração falhou inesperadamente",
+  "site.generator.prompt_blocked": "Este prompt não atende às nossas diretrizes de conteúdo.",
+  "site.generator.prompt_review": "Este prompt precisa de uma revisão rápida. Tente novamente mais tarde.",
   "site.generator.full_video": "Vídeo completo",
   "site.generator.generate": "Gerar",
   "site.generator.generate_full": "Gerar vídeo completo",

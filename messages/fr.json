@@ -1691,6 +1691,8 @@
   "site.generator.failed": "Échec de la génération",
   "site.generator.failed_status": "Échec de la génération ({status})",
   "site.generator.failed_unexpected": "La génération a échoué de manière inattendue",
+  "site.generator.prompt_blocked": "Ce prompt ne respecte pas nos règles de contenu.",
+  "site.generator.prompt_review": "Ce prompt nécessite une vérification rapide. Veuillez réessayer plus tard.",
   "site.generator.full_video": "Vidéo complète",
   "site.generator.generate": "Générer",
   "site.generator.generate_full": "Générer la vidéo complète",

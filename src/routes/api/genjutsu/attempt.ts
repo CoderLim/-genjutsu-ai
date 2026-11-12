@@ -31,6 +31,7 @@ import {
   COLDPLAY_KISS_CAM_PRODUCT_ID,
   COLDPLAY_KISS_CAM_RESOLUTIONS,
 } from '@/modules/coldplay-kiss-cam/constants';
+import { getAllConfigs } from '@/modules/config/service';
 import {
   CRAZY_FROG_PRODUCT_ID,
   CRAZY_FROG_RESOLUTIONS,
@@ -64,6 +65,10 @@ import {
   createGenjutsuAttempt,
   GenjutsuAttemptConflictError,
 } from '@/modules/genjutsu/billing';
+import {
+  assertPromptAllowed,
+  PromptSafetyError,
+} from '@/modules/genjutsu/prompt-safety';
 import {
   isGenjutsuProductId,
   resolveProductProviderTarget,
@@ -525,6 +530,21 @@ async function POST({ request }: { request: Request }) {
       );
     }
 
+    // Homepage free-form prompts only; fixed product templates are allowlisted.
+    if (!product) {
+      const configs = await getAllConfigs();
+      try {
+        await assertPromptAllowed(prompt, configs);
+      } catch (error) {
+        if (error instanceof PromptSafetyError) {
+          return respErr(error.code, {
+            status: error.code === 'PROMPT_BLOCKED' ? 400 : 503,
+          });
+        }
+        throw error;
+      }
+    }
+
     const target = resolveProductProviderTarget(product, mode);
     const task = await createGenjutsuAttempt({
       generationId,
@@ -545,6 +565,11 @@ async function POST({ request }: { request: Request }) {
   } catch (error: any) {
     if (error instanceof GenjutsuAttemptConflictError) {
       return respJson(-1, error.message, { code: error.code }, { status: 409 });
+    }
+    if (error instanceof PromptSafetyError) {
+      return respErr(error.code, {
+        status: error.code === 'PROMPT_BLOCKED' ? 400 : 503,
+      });
     }
     console.error('genjutsu attempt failed:', error);
     return respErr(error?.message || 'Failed to create generation attempt', {

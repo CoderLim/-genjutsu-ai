@@ -61,6 +61,7 @@ import {
   assertColdplayKissCamProviderBinding,
   ColdplayKissCamProviderBindingError,
 } from '@/modules/coldplay-kiss-cam/provider';
+import { getAllConfigs } from '@/modules/config/service';
 import {
   assertCrazyFrogInputs,
   CrazyFrogPreflightError,
@@ -137,6 +138,10 @@ import {
 } from '@/modules/genjutsu/e2e-mock';
 import { calculateGenjutsuCredits } from '@/modules/genjutsu/pricing';
 import {
+  assertPromptAllowed,
+  PromptSafetyError,
+} from '@/modules/genjutsu/prompt-safety';
+import {
   isUncertainProviderHttpStatus,
   logGenjutsuProviderFailure,
   providerFailureDebugFields,
@@ -158,7 +163,10 @@ import {
   type GenjutsuResolution,
 } from '@/modules/genjutsu/service';
 import { resolveGenjutsuInputUrls } from '@/modules/genjutsu/storage';
-import { isSeedanceFamilyProvider } from '@/modules/genjutsu/workflow';
+import {
+  isGenjutsuProductId,
+  isSeedanceFamilyProvider,
+} from '@/modules/genjutsu/workflow';
 import {
   assertGlowStickAiInputs,
   GlowStickAiPreflightError,
@@ -658,6 +666,21 @@ async function POST({ request }: { request: Request }) {
       );
     }
 
+    // Homepage free-form prompts only; fixed product templates are allowlisted.
+    if (!product || !isGenjutsuProductId(product)) {
+      const configs = await getAllConfigs();
+      try {
+        await assertPromptAllowed(input.prompt, configs);
+      } catch (error) {
+        if (error instanceof PromptSafetyError) {
+          return respErr(error.code, {
+            status: error.code === 'PROMPT_BLOCKED' ? 400 : 503,
+          });
+        }
+        throw error;
+      }
+    }
+
     let sourceDurationSeconds = task
       ? taskSourceDurationSeconds(task)
       : undefined;
@@ -948,6 +971,12 @@ async function POST({ request }: { request: Request }) {
         },
         { status: 402 }
       );
+    }
+
+    if (error instanceof PromptSafetyError) {
+      return respErr(error.code, {
+        status: error.code === 'PROMPT_BLOCKED' ? 400 : 503,
+      });
     }
 
     if (generationIdForFailure && userIdForFailure) {

@@ -1014,6 +1014,8 @@
   "site.generator.submission_uncertain": "Generation submission result is uncertain.",
   "site.generator.connection_lost": "Connection lost while starting generation. Checking the existing job before allowing another submission.",
   "site.generator.failed_unexpected": "Generation failed unexpectedly",
+  "site.generator.prompt_blocked": "This prompt doesn’t meet our content guidelines.",
+  "site.generator.prompt_review": "This prompt needs a quick review. Please try again later.",
   "site.generator.checkout_url_missing": "Checkout URL was not returned",
   "site.generator.upload_incomplete": "Storage returned an incomplete upload batch",
   "site.generator.upload_url_missing": "Missing storage upload URL",

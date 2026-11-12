@@ -584,10 +584,23 @@ function logProviderFailureDebug(
   console.error(`[genjutsu] ${context} providerError:`, providerError, data);
 }
 
+function promptSafetyUiMessage(codeOrMessage: string | null | undefined) {
+  if (codeOrMessage === 'PROMPT_BLOCKED') {
+    return m['site.generator.prompt_blocked']();
+  }
+  if (codeOrMessage === 'PROMPT_REVIEW') {
+    return m['site.generator.prompt_review']();
+  }
+  return null;
+}
+
 function generationFailureUiMessage(
   error?: string | null,
   errorCode?: string | null
 ) {
+  const promptSafety =
+    promptSafetyUiMessage(errorCode) || promptSafetyUiMessage(error);
+  if (promptSafety) return promptSafety;
   if (
     errorCode === 'PROVIDER_LIKENESS_REJECTED' ||
     (error && isLikenessRejectionMessage(error))
@@ -626,6 +639,10 @@ function providerSubmitUiMessage(cause: unknown): string {
         : typeof cause === 'string'
           ? cause
           : '';
+
+  const promptSafety =
+    promptSafetyUiMessage(code) || promptSafetyUiMessage(message);
+  if (promptSafety) return promptSafety;
 
   if (
     code === 'PROVIDER_LIKENESS_REJECTED' ||

@@ -1691,6 +1691,8 @@
   "site.generator.failed": "生成に失敗しました",
   "site.generator.failed_status": "生成に失敗しました（{status}）",
   "site.generator.failed_unexpected": "予期しないエラーで生成に失敗しました",
+  "site.generator.prompt_blocked": "このプロンプトはコンテンツガイドラインに適合しません。",
+  "site.generator.prompt_review": "このプロンプトは確認が必要です。しばらくしてからもう一度お試しください。",
   "site.generator.full_video": "フル動画",
   "site.generator.generate": "生成する",
   "site.generator.generate_full": "フル動画を生成",

@@ -1691,6 +1691,8 @@
   "site.generator.failed": "Generierung fehlgeschlagen",
   "site.generator.failed_status": "Generierung fehlgeschlagen ({status})",
   "site.generator.failed_unexpected": "Die Generierung ist unerwartet fehlgeschlagen",
+  "site.generator.prompt_blocked": "Dieser Prompt entspricht nicht unseren Inhaltsrichtlinien.",
+  "site.generator.prompt_review": "Dieser Prompt muss kurz geprüft werden. Bitte versuche es später erneut.",
   "site.generator.full_video": "Vollständiges Video",
   "site.generator.generate": "Generieren",
   "site.generator.generate_full": "Vollständiges Video erstellen",
