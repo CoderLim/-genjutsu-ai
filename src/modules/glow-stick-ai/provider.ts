@@ -20,7 +20,7 @@ export function resolveGlowStickAiProviderTarget(): GenjutsuProviderTarget {
 
 /**
  * Persisted attempts keep the provider/model they were created with.
- * Glow Stick must stay on the homepage objects-swap target (Higgs Light).
+ * Accept previous Standard jobs as well as the current product-scoped Light pin.
  */
 export function assertGlowStickAiProviderBinding(
   provider: unknown,
@@ -38,7 +38,7 @@ export function assertGlowStickAiProviderBinding(
   }
   if (!isPersistedProductProviderTarget(provider, model, GLOW_STICK_AI_MODE)) {
     throw new GlowStickAiProviderBindingError(
-      `Glow Stick AI requires homepage objects-swap provider/model (${String(provider)} / ${String(model)})`
+      `Glow Stick AI does not support persisted provider/model (${String(provider)} / ${String(model)})`
     );
   }
 }
