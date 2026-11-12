@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { envConfigs } from '@/config';
+
 import { HIGGSFIELD_GENJUTSU_MODELS } from './model-config';
 
 import {
@@ -215,4 +217,38 @@ test('isGenjutsuProductId allowlist', () => {
   assert.equal(isGenjutsuProductId(WASSUP_IN_A_MINUTE_AI_PRODUCT), true);
   assert.equal(isGenjutsuProductId('bulin-47'), false);
   assert.equal(isGenjutsuProductId(''), false);
+});
+
+
+test('Standard and Light can coexist with one Higgsfield provider', () => {
+  const previousProvider = envConfigs.genjutsu_object_swap_provider;
+  const previousModel = envConfigs.higgsfield_genjutsu_object_swap_model;
+  try {
+    envConfigs.genjutsu_object_swap_provider = 'higgsfield';
+    envConfigs.higgsfield_genjutsu_object_swap_model =
+      HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap'];
+
+    const pinned = resolveProductProviderTarget(
+      CHIPMUNKS_DANCE_PRODUCT,
+      'objects-swap'
+    );
+    const unpinned = resolveProductProviderTarget(
+      SMALLTOWN_BOY_DANCE_PRODUCT,
+      'objects-swap'
+    );
+    assert.equal(pinned.provider, 'higgsfield');
+    assert.equal(unpinned.provider, 'higgsfield');
+    assert.equal(pinned.model, HIGGSFIELD_GENJUTSU_MODELS.light['objects-swap']);
+    assert.equal(unpinned.model, HIGGSFIELD_GENJUTSU_MODELS.standard['objects-swap']);
+  } finally {
+    envConfigs.genjutsu_object_swap_provider = previousProvider;
+    envConfigs.higgsfield_genjutsu_object_swap_model = previousModel;
+  }
+});
+
+test('unknown inherited property names never activate product model overrides', () => {
+  assert.deepEqual(
+    resolveProductProviderTarget('constructor', 'objects-swap'),
+    resolveGenjutsuProviderTarget('objects-swap')
+  );
 });
