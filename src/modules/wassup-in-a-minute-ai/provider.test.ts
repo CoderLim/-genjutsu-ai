@@ -1,32 +1,37 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import test from 'node:test';
 
-import { resolveGenjutsuProviderTarget } from '@/modules/genjutsu/workflow';
-
+import { HIGGSFIELD_GENJUTSU_MODELS } from '@/modules/genjutsu/model-config';
 import { WASSUP_IN_A_MINUTE_AI_MODE } from './constants';
 import {
   assertWassupInAMinuteAiProviderBinding,
-  resolveWassupInAMinuteAiProviderTarget,
   WassupInAMinuteAiProviderBindingError,
+  resolveWassupInAMinuteAiProviderTarget,
 } from './provider';
 
-test('wassup provider follows homepage objects-swap', () => {
-  assert.deepEqual(
-    resolveWassupInAMinuteAiProviderTarget(),
-    resolveGenjutsuProviderTarget(WASSUP_IN_A_MINUTE_AI_MODE)
-  );
+test('wassup-in-a-minute-ai pins Genjutsu Light independently of the homepage', () => {
+  assert.deepEqual(resolveWassupInAMinuteAiProviderTarget(), {
+    provider: 'higgsfield',
+    model: HIGGSFIELD_GENJUTSU_MODELS.light[WASSUP_IN_A_MINUTE_AI_MODE],
+  });
 });
 
-test('provider binding accepts homepage objects-swap pair', () => {
-  const expected = resolveWassupInAMinuteAiProviderTarget();
+test('wassup-in-a-minute-ai accepts persisted Light and historical Standard tasks', () => {
   assert.doesNotThrow(() =>
-    assertWassupInAMinuteAiProviderBinding(expected.provider, expected.model)
+    assertWassupInAMinuteAiProviderBinding('higgsfield', HIGGSFIELD_GENJUTSU_MODELS.light[WASSUP_IN_A_MINUTE_AI_MODE])
+  );
+  assert.doesNotThrow(() =>
+    assertWassupInAMinuteAiProviderBinding('higgsfield', HIGGSFIELD_GENJUTSU_MODELS.standard[WASSUP_IN_A_MINUTE_AI_MODE])
   );
 });
 
-test('provider binding rejects mismatched pair', () => {
+test('wassup-in-a-minute-ai rejects unrelated providers and unknown models', () => {
   assert.throws(
-    () => assertWassupInAMinuteAiProviderBinding('higgsfield', 'wrong-model'),
+    () => assertWassupInAMinuteAiProviderBinding('seedance-wavespeed', 'bytedance/seedance-2.5/video-edit'),
+    WassupInAMinuteAiProviderBindingError
+  );
+  assert.throws(
+    () => assertWassupInAMinuteAiProviderBinding('higgsfield', 'not-an-allowed-model'),
     WassupInAMinuteAiProviderBindingError
   );
 });
