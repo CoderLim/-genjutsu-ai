@@ -194,8 +194,8 @@ export function resolveProductProviderTarget(
 /**
  * Persisted product tasks were bound by the server when the attempt was created.
  * Allow known Standard/Light targets across subsequent env/profile changes.
- * For other supported providers, trust the model stored on the server-owned task
- * rather than comparing it to a *new* deployment's model setting.
+ * This check is intentionally limited to Higgsfield Genjutsu models: the five
+ * pinned products must not silently switch to unrelated Seedance providers.
  */
 export function isPersistedProductProviderTarget(
   provider: unknown,
@@ -210,7 +210,7 @@ export function isPersistedProductProviderTarget(
         : envConfigs.higgsfield_genjutsu_object_swap_model?.trim();
     return isKnownHiggsfieldGenjutsuModel(model, mode) || model === configured;
   }
-  return typeof provider === 'string' && isSeedanceFamilyProvider(provider);
+  return false;
 }
 
 /** Resolve the objects-swap model pair for an already-persisted provider. */
