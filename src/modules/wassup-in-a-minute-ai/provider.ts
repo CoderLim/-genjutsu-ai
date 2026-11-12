@@ -20,7 +20,7 @@ export function resolveWassupInAMinuteAiProviderTarget(): GenjutsuProviderTarget
 
 /**
  * Persisted attempts keep the provider/model they were created with.
- * Accept previous Standard jobs as well as the current product-scoped Light pin.
+ * Accept the current Standard pin as well as historical Light jobs.
  */
 export function assertWassupInAMinuteAiProviderBinding(
   provider: unknown,
