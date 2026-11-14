@@ -21,7 +21,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
@@ -130,3 +130,34 @@ jobs:
           curl --fail --silent --show-error --location --max-time 30 https://genjutsuai.net/ -o /dev/null
           curl --fail --silent --show-error --location --max-time 30 https://genjutsuai.net/api/config/public -o /dev/null
           echo "Production smoke checks passed."
+
+      - name: Trigger IndexNow after live deploy
+        shell: bash
+        env:
+          SITE_URL: https://genjutsuai.net
+          INDEXNOW_KEY: '8189d8b9cb213fa24fd11261552a87a3'
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INDEXNOW_DISPATCH_SOURCE: cloudflare-deploy
+        run: |
+          set -euo pipefail
+          SITE_ORIGIN="${SITE_URL%/}"
+          KEY_URL="${SITE_ORIGIN}/${INDEXNOW_KEY}.txt"
+          SITEMAP_URL="${SITE_ORIGIN}/sitemap.xml"
+
+          key_body="$(curl --fail --silent --show-error --location --max-time 30 "${KEY_URL}" | tr -d '\r\n')"
+          if [ "${key_body}" != "${INDEXNOW_KEY}" ]; then
+            echo "IndexNow key mismatch at ${KEY_URL}" >&2
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --location --max-time 30 --head "${SITEMAP_URL}" >/dev/null
+
+          curl --fail --silent --show-error \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/dispatches" \
+            --data "{\"event_type\":\"production-deployed\",\"client_payload\":{\"source\":\"${INDEXNOW_DISPATCH_SOURCE}\",\"site_url\":\"${SITE_ORIGIN}\"}}"
+
+          echo "Dispatched production-deployed for ${SITE_ORIGIN}."
